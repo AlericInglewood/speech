@@ -31,19 +31,13 @@ void jack_shutdown(void* UNUSED_ARG(arg))
   exit(1);
 }
 
-int main(int argc, char* argv[])
+int main(void)
 {
   jack_client_t* client;
   char const** ports;
 
-  if (argc < 2)
-  {
-    std::cerr << "Usage: jack_simple_client <name>" << std::endl;
-    return 1;
-  }
-
   // Try to become a client of the JACK server.
-  if ((client = jack_client_new(argv[1])) == 0)
+  if ((client = jack_client_open("Speech", JackNoStartServer, NULL)) == 0)
   {
     std::cerr << "jack server not running?" << std::endl;
     return 1;
