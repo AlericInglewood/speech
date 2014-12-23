@@ -70,6 +70,9 @@ dnl Detect boost.
 # Library flags.
 #CW_LIB_LIBGTKMM
 
+dnl Libraries.
+PKG_CHECK_MODULES([LIBJACK], [jack])
+
 dnl Used in sys.h to force recompilation when the compiler version changes.
 CW_PROG_CXX_FINGER_PRINTS
 CC_FINGER_PRINT="$cw_prog_cc_finger_print"
