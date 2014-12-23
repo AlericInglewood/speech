@@ -8,6 +8,7 @@
 #ifdef CWDEBUG
 
 #include <cctype>                       // Needed for std::isprint
+#include <cstdio>                       // Needed for sprintf
 #include <iomanip>                      // Needed for setfill
 #include <map>
 #include <string>

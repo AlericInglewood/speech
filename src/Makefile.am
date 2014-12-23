@@ -23,6 +23,8 @@ speech_LDADD = @LIBS@ @CWD_R_LIBS@ @LIBJACK_LIBS@
 
 # --------------- Maintainer's Section
 
+sys.h: timestamp-sys.h
+
 #dist-hook:
 
 all-local:

@@ -16,7 +16,7 @@ jack_port_t* output_port;
 pthread_mutex_t cout_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
-int process(jack_nframes_t nframes, void* arg)
+int process(jack_nframes_t nframes, void* UNUSED_ARG(arg))
 {
   jack_default_audio_sample_t* out = (jack_default_audio_sample_t*)jack_port_get_buffer(output_port, nframes);
   jack_default_audio_sample_t* in = (jack_default_audio_sample_t*)jack_port_get_buffer(input_port, nframes);
@@ -26,7 +26,7 @@ int process(jack_nframes_t nframes, void* arg)
   return 0;
 }
 
-void jack_shutdown(void* arg)
+void jack_shutdown(void* UNUSED_ARG(arg))
 {
   exit(1);
 }

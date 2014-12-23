@@ -22,6 +22,8 @@
 #endif
 #endif
 
+#define UNUSED_ARG(arg)
+
 // Compilers and preprocessor used.  Put here to cause a recompile when changed.
 // CC    : @CC_FINGER_PRINT@
 // CXX   : @CXX_FINGER_PRINT@
