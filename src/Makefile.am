@@ -79,7 +79,7 @@ all-local:
 	fi
 
 distclean-local:
-	rm -rf $(srcdir)/autom4te.cache
+	rm -rf $(srcdir)/autom4te.cache sys.h
 	@MAINTAINER_MODE_TRUE@rm -f .all_sources *.s *.ii
 
 clean-local:
