@@ -21,49 +21,6 @@ speech_SOURCES = \
 speech_CXXFLAGS = @CXXFLAGS@ @CWD_R_FLAGS@ -pthread @LIBJACK_CFLAGS@
 speech_LDADD = @LIBS@ @CWD_R_LIBS@ @LIBJACK_LIBS@
 
-if USE_PCH
-@Makefilein@PREVCXXDEPMODE := $(CXXDEPMODE)
-@Makefilein@CXXDEPMODE = $(PREVCXXDEPMODE) havepch=yes
-@Makefilein@ifeq (./$(DEPDIR)/pch.po, $(wildcard ./$(DEPDIR)/pch.po))
-@Makefilein@@am__include@ ./$(DEPDIR)/pch.po
-@Makefilein@endif
-PIC_FLAGS := $(shell egrep '^pic_flag=.*-f(PIC|pic)' $(top_builddir)/libtool | head -n 1 | sed -r -e 's/pic_flag=//' -e 's/^ *"//' -e 's/" *$$//')
-speech_CXXFLAGS += @PCHFLAGS@
-
-APPLICATIONSUM := $(shell echo "$(CXXFLAGS)" | md5sum | sed -e 's/ .*//')
-APPLICATIONSUM_PIC := $(shell echo "$(CXXFLAGS) $(PICFLAGS)" | md5sum | sed -e 's/ .*//')
-
-BUILT_SOURCES += pch.h.gch/$(APPLICATIONSUM)
-BUILT_SOURCES += pch.h.gch/$(APPLICATIONSUM_PIC)
-
-pch.h.gch/$(APPLICATIONSUM): $(srcdir)/pch-source.h Makefile
-	@rm -f $@
-	@test -d pch.h.gch || mkdir pch.h.gch
-	@test -d $(DEPDIR) || mkdir $(DEPDIR)
-	@mkdir -p empty.pch.h
-	@touch empty.pch.h/pch.h
-	@if $(CXX) -Iempty.pch.h $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(speech_CXXFLAGS) \
-	  -UUSE_PCH -M -MT pch.h.gch -MF $(DEPDIR)/pch.TTpo $(srcdir)/pch-source.h; then \
-	  cat $(DEPDIR)/pch.TTpo | sed -e 's%^pch\.h\.gch:%pch.h.gch/$(APPLICATIONSUM):%' -e 's% empty\.pch\.h/pch\.h%%' > $(DEPDIR)/pch.Tpo; \
-	  cmp -s $(DEPDIR)/pch.Tpo $(DEPDIR)/pch.po || mv $(DEPDIR)/pch.Tpo $(DEPDIR)/pch.po; \
-	fi
-	$(CXX) -Iempty.pch.h $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(speech_CXXFLAGS) \
-	  -c -o $@ $(srcdir)/pch-source.h
-	@rm empty.pch.h/pch.h
-	@rmdir empty.pch.h
-
-pch.h.gch/$(APPLICATIONSUM_PIC): $(srcdir)/pch-source.h Makefile
-	@rm -f $@
-	@test -d pch.h.gch || mkdir pch.h.gch
-	@test -d $(DEPDIR) || mkdir $(DEPDIR)
-	@mkdir -p empty.pch.h
-	@touch empty.pch.h/pch.h
-	$(CXX) -Iempty.pch.h $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcwtl_la_CXXFLAGS) $(PIC_FLAGS) \
-	  -c -o $@ $(srcdir)/pch-source.h
-	@rm empty.pch.h/pch.h
-	@rmdir empty.pch.h
-endif
-
 # --------------- Maintainer's Section
 
 #dist-hook:
@@ -83,9 +40,6 @@ distclean-local:
 	@MAINTAINER_MODE_TRUE@rm -f .all_sources *.s *.ii
 
 clean-local:
-if USE_PCH
-	rm -f pch.h.gch/* $(DEPDIR)/pch.*po
-endif
 
 MAINTAINERCLEANFILES = $(srcdir)/Makefile.in tags troep* *.cgd
 

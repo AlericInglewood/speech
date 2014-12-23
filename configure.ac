@@ -48,10 +48,6 @@ dnl Add --enable-debug (DEBUG, DOXYGEN_DEBUG), --enable-libcwd (CWDEBUG, DOXYGEN
 dnl --enable-optimise and --enable-profile options. Update USE_LIBCWD, CWD_LIBS and CXXFLAGS accordingly.
 CW_OPG_FLAGS([-W -Wall -Woverloaded-virtual -Wundef -Wpointer-arith -Wwrite-strings -Winline])
 
-dnl Add --enable-pch (USE_PCH (macro)) option.
-dnl Update USE_PCH (automake conditional) and PCHFLAGS accordingly.
-CW_PCHFLAGS
-
 dnl Each Makefile.am should use DEFS = @DEFS@. Set DEFS here.
 DEFS="-DHAVE_CONFIG_H"
 AC_SUBST(DEFS)

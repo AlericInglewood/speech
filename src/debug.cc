@@ -3,13 +3,10 @@
 //! @file debug.cc
 //! @brief This file contains the definitions of debug related objects and functions.
 
-#ifndef USE_PCH
 #include "sys.h"                        // Needed for platform-specific code
-#endif
 
 #ifdef CWDEBUG
 
-#ifndef USE_PCH
 #include <cctype>                       // Needed for std::isprint
 #include <iomanip>                      // Needed for setfill
 #include <map>
@@ -19,7 +16,6 @@
 #ifdef USE_LIBCW
 #include <libcw/memleak.h>		// memleak_filter
 #endif
-#endif // USE_PCH
 
 namespace debug {
   namespace channels {	// namespace DEBUGCHANNELS

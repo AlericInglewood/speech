@@ -8,14 +8,12 @@
 
 #ifdef CWDEBUG
 
-#ifndef USE_PCH
 #include <sys/time.h>
 #include <iosfwd>                       // std::ostream&
 #include <utility>                      // std::pair
 #include <map>
 #include <boost/shared_ptr.hpp>         // boost::shared_ptr
 #include <boost/weak_ptr.hpp>           // boost::weak_ptr
-#endif
 
 struct timeval;
 
