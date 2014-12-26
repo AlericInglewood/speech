@@ -14,6 +14,12 @@
 #include <map>
 #include <boost/shared_ptr.hpp>         // boost::shared_ptr
 #include <boost/weak_ptr.hpp>           // boost::weak_ptr
+#if CWDEBUG_LOCATION
+#include <libcwd/type_info.h>
+#else
+#include <typeinfo>
+#endif
+
 
 namespace debug {
 
@@ -28,6 +34,12 @@ inline char const* type_name_of(void)
 }
 
 } // namespace debug
+
+namespace AIAlert {
+  class Error;
+} // namespace AIAlert
+
+extern std::ostream& operator<<(std::ostream& os, AIAlert::Error const& error);
 
 struct timeval;
 
