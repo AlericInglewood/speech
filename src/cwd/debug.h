@@ -8,7 +8,8 @@
 
 #ifndef CWDEBUG
 
-#ifndef DOXYGEN         // No need to document this.  See http://libcwd.sourceforge.net/ for more info.
+// No need to document this.  See http://libcwd.sourceforge.net/ for more info.
+/// @cond Doxygen_Suppress
 
 #include <iostream>
 #include <cstdlib>      // std::exit, EXIT_FAILURE
@@ -37,7 +38,7 @@
 #define CWDEBUG_DEBUGT 0
 #define CWDEBUG_MARKER 0
 
-#endif // !DOXYGEN
+/// @endcond
 
 #include <cassert>
 #ifdef DEBUG
@@ -80,12 +81,9 @@ namespace dc {
 using namespace libcwd::channels::dc;
 using libcwd::channel_ct;
 
-#ifndef DOXYGEN         // Doxygen bug causes a warning here.
 // Add the declaration of new debug channels here
 // and add their definition in a custom debug.cc file.
-//extern channel_ct custom;
-
-#endif
+extern channel_ct xmlparser;
 
 } // namespace dc
 } // namespace DEBUGCHANNELS
@@ -125,6 +123,32 @@ struct Indent {
 };
 
 } // namespace debug
+
+//! @brief A debug streambuf that prints characters written to it with a green background.
+class DebugBuf : public std::streambuf
+{
+  public:
+    DebugBuf() { Dout(dc::notice|continued_cf, ""); setp(0, 0); }
+    ~DebugBuf() { Dout(dc::finish, ""); }
+
+    /// Implement std::streambuf::overflow.
+    /*virtual*/ int_type overflow(int_type c = traits_type::eof())
+    {
+      if (c != traits_type::eof())
+      {
+	if (c == '\n')
+	{
+	  Dout(dc::finish, "\e[42m\\n\e[0m");
+	  Dout(dc::notice|continued_cf, "");
+	}
+	else
+	{
+	  Dout(dc::continued, "\e[42m" << (char)c << "\e[0m");
+	}
+      }
+      return c;
+    }
+};
 
 #if LIBCWD_THREAD_SAFE
 extern pthread_mutex_t cout_mutex;

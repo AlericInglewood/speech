@@ -27,7 +27,7 @@ namespace debug {
 #endif
       // Add new debug channels here.
 
-      //channel_ct custom DDCN("CUSTOM");	//!< This debug channel is used for ...
+      channel_ct xmlparser DDCN("XMLPARSER");   //!< This debug channel is used for parsing xml files.
 
     } // namespace dc
   } // namespace DEBUGCHANNELS

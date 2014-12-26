@@ -48,6 +48,9 @@ dnl Add --enable-debug (DEBUG, DOXYGEN_DEBUG), --enable-libcwd (CWDEBUG, DOXYGEN
 dnl --enable-optimise and --enable-profile options. Update USE_LIBCWD, CWD_LIBS and CXXFLAGS accordingly.
 CW_OPG_FLAGS([-W -Wall -Woverloaded-virtual -Wundef -Wpointer-arith -Wwrite-strings -Winline])
 
+dnl This source code is C++11.
+CXXFLAGS="$CXXFLAGS -std=c++11"
+
 dnl Each Makefile.am should use DEFS = @DEFS@. Set DEFS here.
 DEFS="-DHAVE_CONFIG_H"
 AC_SUBST(DEFS)
@@ -61,13 +64,14 @@ AC_PROG_INSTALL
 AC_PROG_LIBTOOL
 
 dnl Detect boost.
-#CW_BOOST([$cw_enable_static], [no], [])
+CW_BOOST([$cw_enable_static], [no], [filesystem system])
 
 # Library flags.
 #CW_LIB_LIBGTKMM
 
 dnl Libraries.
 PKG_CHECK_MODULES([LIBJACK], [jack])
+PKG_CHECK_MODULES([LIBXML], [libxml++-2.6])
 
 dnl Used in sys.h to force recompilation when the compiler version changes.
 CW_PROG_CXX_FINGER_PRINTS
@@ -85,9 +89,12 @@ dnl Output the other configuration files.
 AC_CONFIG_FILES(
         [Makefile]
         [src/Makefile]
+        [src/cwd/Makefile]
+        [src/utils/Makefile]
+        [src/xml/Makefile]
         [doc/Makefile]
         [doc/doxygen.config]
-	[doc/html.header]
-	[doc/html.footer])
+        [doc/html.header]
+        [doc/html.footer])
 
 AC_OUTPUT

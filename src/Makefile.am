@@ -2,21 +2,18 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS = .
+SUBDIRS = cwd utils xml .
 
-EXTRA_DIST = pch-source.h ${BUILT_SOURCES}
+EXTRA_DIST = ${BUILT_SOURCES}
 
 bin_PROGRAMS = speech
 BUILT_SOURCES =
 DEFS = @DEFS@
+DEFAULT_INCLUDES=-iquote $(top_builddir) -iquote $(top_builddir)/src -iquote $(srcdir) -iquote $(srcdir)/cwd
 CXXFLAGS =
 
 speech_SOURCES = \
-	speech.cc \
-	debug_ostream_operators.h \
-	debug_ostream_operators.cc \
-	debug.h \
-	debug.cc
+	speech.cc
 
 speech_CXXFLAGS = @CXXFLAGS@ @CWD_R_FLAGS@ -pthread @LIBJACK_CFLAGS@
 speech_LDADD = @LIBS@ @CWD_R_LIBS@ @LIBJACK_LIBS@
