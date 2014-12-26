@@ -20,8 +20,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DEBUG_OSTREAM_OPERATORS_H
-#define DEBUG_OSTREAM_OPERATORS_H
+#ifndef CWD_DEBUG_OSTREAM_OPERATORS_H
+#define CWD_DEBUG_OSTREAM_OPERATORS_H
 
 #ifdef CWDEBUG
 
@@ -98,4 +98,4 @@ std::ostream& operator<<(std::ostream& os, std::map<T1, T2, T3> const& data)
 }
 
 #endif // CWDEBUG
-#endif // DEBUG_OSTREAM_OPERATORS_H
+#endif // CWD_DEBUG_OSTREAM_OPERATORS_H

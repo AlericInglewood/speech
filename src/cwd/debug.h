@@ -3,8 +3,8 @@
 //! @file debug.h
 //! @brief This file contains the declaration of debug related macros, objects and functions.
 
-#ifndef DEBUG_H
-#define DEBUG_H
+#ifndef CWD_DEBUG_H
+#define CWD_DEBUG_H
 
 #ifndef CWDEBUG
 
@@ -182,4 +182,4 @@ extern pthread_mutex_t cout_mutex;
 
 #include "debug_ostream_operators.h"
 
-#endif // DEBUG_H
+#endif // CWD_DEBUG_H
