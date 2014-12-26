@@ -9,8 +9,8 @@ DEFAULT_INCLUDES=-iquote $(top_builddir) -iquote $(top_builddir)/src -iquote $(s
 # See src/Makefile.am.
 libdebug_la_CXXFLAGS = @CXXFLAGS@ @CWD_FLAGS@
 libdebug_la_SOURCES = \
-	debug.cc \
-	debug_ostream_operators.cc
+	debug.cpp \
+	debug_ostream_operators.cpp
 
 MAINTAINERCLEANFILES = $(srcdir)/Makefile.in
 

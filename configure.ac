@@ -21,8 +21,8 @@ dnl Put revision of configure.ac in configure script.
 AC_REVISION($Revision: 5 $)dnl
 
 dnl Ensure that the directory specified with --srcdir was correct
-dnl by demanding that it contains `speech.cc'.
-AC_CONFIG_SRCDIR([src/speech.cc])
+dnl by demanding that it contains `speech.cpp'.
+AC_CONFIG_SRCDIR([src/speech.cpp])
 
 dnl Automake options.
 AM_INIT_AUTOMAKE
