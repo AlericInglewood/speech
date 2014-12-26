@@ -1,5 +1,5 @@
 /**
- * /file speech.cc
+ * /file speech.cpp
  * /brief Jack client for speech recognition.
  *
  * Copyright (C) 2014 Aleric Inglewood.
@@ -28,13 +28,10 @@
 #include <jack/jack.h>
 
 #include "debug.h"
+#include "utils/GlobalObjectManager.h"
 
 jack_port_t* input_port;
 jack_port_t* output_port;
-
-#if LIBCWD_THREAD_SAFE
-pthread_mutex_t cout_mutex = PTHREAD_MUTEX_INITIALIZER;
-#endif
 
 int process(jack_nframes_t nframes, void* UNUSED_ARG(arg))
 {
@@ -53,6 +50,10 @@ void jack_shutdown(void* UNUSED_ARG(arg))
 
 int main(void)
 {
+#ifdef DEBUGGLOBAL
+  GlobalObjectManager::main_entered();
+#endif
+
   jack_client_t* client;
   char const** ports;
 
