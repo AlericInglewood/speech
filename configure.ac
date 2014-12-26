@@ -48,8 +48,14 @@ dnl Add --enable-debug (DEBUG, DOXYGEN_DEBUG), --enable-libcwd (CWDEBUG, DOXYGEN
 dnl --enable-optimise and --enable-profile options. Update USE_LIBCWD, CWD_LIBS and CXXFLAGS accordingly.
 CW_OPG_FLAGS([-W -Wall -Woverloaded-virtual -Wundef -Wpointer-arith -Wwrite-strings -Winline])
 
+dnl This application uses threads.
+LIBCWD_FLAGS="$CWD_R_FLAGS"
+LIBCWD_LIBS="$CWD_R_LIBS"
+AC_SUBST(LIBCWD_FLAGS)
+AC_SUBST(LIBCWD_LIBS)
+
 dnl This source code is C++11.
-CXXFLAGS="$CXXFLAGS -std=c++11"
+CXXFLAGS="$CXXFLAGS -pthread -std=c++11"
 
 dnl Each Makefile.am should use DEFS = @DEFS@. Set DEFS here.
 DEFS="-DHAVE_CONFIG_H"

@@ -53,6 +53,7 @@ int main(void)
 #ifdef DEBUGGLOBAL
   GlobalObjectManager::main_entered();
 #endif
+  Debug(debug::init());
 
   jack_client_t* client;
   char const** ports;
