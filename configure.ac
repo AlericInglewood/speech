@@ -9,7 +9,7 @@ define(CW_VERSION_MINOR, 0)
 define(CW_VERSION_REVISION, 0)
 
 define(CW_PACKAGE_NAME, [speech])
-define(CW_BUGREPORT, [carlo@alinoe.com])
+define(CW_BUGREPORT, [Aleric.Inglewood@gmail.com])
 
 dnl Package name and version
 AC_INIT(CW_PACKAGE_NAME, CW_VERSION_MAJOR.CW_VERSION_MINOR.CW_VERSION_REVISION, CW_BUGREPORT)
@@ -31,7 +31,7 @@ dnl Include maintainer mode targets
 AM_MAINTAINER_MODE
 
 dnl Because we use cwautomacros.
-CW_AUTOMACROS([20090610])
+CW_AUTOMACROS([20140831])
 
 dnl We use doxygen for documentation.
 CW_DOXYGEN
