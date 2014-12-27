@@ -28,6 +28,8 @@
 #include <jack/jack.h>
 
 #include "debug.h"
+#include "utils/debug_ostream_operators.h"
+#include "utils/AIAlert.h"
 #include "utils/GlobalObjectManager.h"
 
 jack_port_t* input_port;
@@ -55,72 +57,96 @@ int main(void)
 #endif
   Debug(debug::init());
 
-  jack_client_t* client;
-  char const** ports;
-
-  // Try to become a client of the JACK server.
-  if ((client = jack_client_open("Speech", JackNoStartServer, NULL)) == 0)
+  try
   {
-    std::cerr << "jack server not running?" << std::endl;
+    jack_client_t* client;
+    char const** ports;
+
+    // Try to become a client of the JACK server.
+    if ((client = jack_client_open("Speech", JackNoStartServer, NULL)) == NULL)
+    {
+      THROW_ALERT("Could not open jack client \"[NAME]\". Is the JACK server not running?",
+	  AIArgs("[NAME]", "Speech"));
+    }
+
+    // Tell the JACK server to call `process()' whenever there is work to be done.
+    jack_set_process_callback(client, process, 0);
+
+    // Tell the JACK server to call `jack_shutdown()' if
+    // it ever shuts down, either entirely, or if it
+    // just decides to stop calling us.
+    jack_on_shutdown(client, jack_shutdown, 0);
+
+    // Display the current sample rate.
+    std::cout << "Engine sample rate: " << jack_get_sample_rate(client) << " Hz." << std::endl;
+
+    // Create two ports.
+    input_port = jack_port_register(client, "input", JACK_DEFAULT_AUDIO_TYPE, JackPortIsInput, 0);
+    output_port = jack_port_register(client, "output", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
+
+    // Tell the JACK server that we are ready to roll.
+    int err = jack_activate(client);
+    if (err)
+    {
+      THROW_ALERTC(err, "Cannot activate client");
+    }
+
+    // Connect the ports. Note: you can't do this before
+    // the client is activated, because we can't allow
+    // connections to be made to clients that aren't
+    // running.
+    if ((ports = jack_get_ports(client, NULL, NULL, JackPortIsPhysical|JackPortIsOutput)) == NULL)
+    {
+      THROW_ALERT("Cannot find any physical capture ports.");
+    }
+
+    err = jack_connect(client, ports[0], jack_port_name(input_port));
+    if (err == EEXIST)
+    {
+      std::cout << "Ports " << ports[0] << " and " << jack_port_name(input_port) << " are already connected!" << std::endl;
+    }
+    else if (err)
+    {
+      THROW_ALERTC(err, "jack_connect: Cannot connect input ports \"[PORT1]\" and \"[PORT2]\"",
+	  AIArgs("[PORT1]", ports[0])("[PORT2]", jack_port_name(input_port)));
+    }
+
+    free(ports);
+
+    if ((ports = jack_get_ports(client, NULL, NULL, JackPortIsPhysical|JackPortIsInput)) == NULL)
+    {
+      THROW_ALERT("Cannot find any physical playback ports.");
+    }
+
+    err = jack_connect(client, jack_port_name(output_port), ports[0]);
+    if (err == EEXIST)
+    {
+      std::cout << "Ports " << ports[0] << " and " << jack_port_name(input_port) << " are already connected!" << std::endl;
+    }
+    else if (err)
+    {
+      THROW_ALERTC(err, "jack_connect: Cannot connect output ports \"[PORT1]\" and \"[PORT2]\"",
+	  AIArgs("[PORT1]", jack_port_name(output_port))("[PORT2]", ports[0]));
+    }
+
+    free(ports);
+
+    // Since this is just a toy, run for a few seconds, then finish.
+
+    sleep(10);
+    jack_client_close(client);
+
+  }
+  catch (AIAlert::ErrorCode const& error)
+  {
+    std::cerr << error << ": " << strerror(error.getCode()) << std::endl;
     return 1;
   }
-
-  // Tell the JACK server to call `process()' whenever there is work to be done.
-  jack_set_process_callback(client, process, 0);
-
-  // Tell the JACK server to call `jack_shutdown()' if
-  // it ever shuts down, either entirely, or if it
-  // just decides to stop calling us.
-  jack_on_shutdown(client, jack_shutdown, 0);
-
-  // Display the current sample rate.
-  std::cout << "engine sample rate: " << jack_get_sample_rate(client) << std::endl;
-
-  // Create two ports.
-  input_port = jack_port_register(client, "input", JACK_DEFAULT_AUDIO_TYPE, JackPortIsInput, 0);
-  output_port = jack_port_register(client, "output", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
-
-  // Tell the JACK server that we are ready to roll.
-  if (jack_activate(client))
+  catch(AIAlert::Error const& error)
   {
-    std::cerr << "Cannot activate client." << std::endl;
+    std::cerr << error << std::endl;
     return 1;
   }
-
-  // Connect the ports. Note: you can't do this before
-  // the client is activated, because we can't allow
-  // connections to be made to clients that aren't
-  // running.
-  if ((ports = jack_get_ports(client, NULL, NULL, JackPortIsPhysical|JackPortIsOutput)) == NULL)
-  {
-    std::cerr << "Cannot find any physical capture ports." << std::endl;
-    exit(1);
-  }
-
-  if (jack_connect(client, ports[0], jack_port_name(input_port)))
-  {
-    std::cerr << "Cannot connect input ports." << std::endl;
-  }
-
-  free(ports);
-
-  if ((ports = jack_get_ports(client, NULL, NULL, JackPortIsPhysical|JackPortIsInput)) == NULL)
-  {
-    std::cerr << "Cannot find any physical playback ports." << std::endl;
-    exit(1);
-  }
-
-  if (jack_connect(client, jack_port_name(output_port), ports[0]))
-  {
-    std::cerr << "Cannot connect output ports." << std::endl;
-  }
-
-  free(ports);
-
-  // Since this is just a toy, run for a few seconds, then finish.
-
-  sleep(10);
-  jack_client_close(client);
 
   return 0;
 }
