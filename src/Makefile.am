@@ -13,6 +13,7 @@ DEFAULT_INCLUDES=-iquote $(top_builddir) -iquote $(top_builddir)/src -iquote $(s
 CXXFLAGS =
 
 speech_SOURCES = \
+	Ports.cpp \
 	speech.cpp
 
 speech_CXXFLAGS = @CXXFLAGS@ @LIBCWD_FLAGS@ @LIBJACK_CFLAGS@

@@ -28,6 +28,7 @@
 #include <jack/jack.h>
 
 #include "debug.h"
+#include "Ports.h"
 #include "utils/debug_ostream_operators.h"
 #include "utils/AIAlert.h"
 #include "utils/GlobalObjectManager.h"
@@ -50,6 +51,24 @@ void jack_shutdown(void* UNUSED_ARG(arg))
   exit(1);
 }
 
+void connect_to(jack_client_t* client, bool output)
+{
+  Ports ports(client);
+  char const* source_port_name = ports.get(JackPortIsPhysical | (output ? JackPortIsInput : JackPortIsOutput));
+  char const* target_port_name = jack_port_name(output ? output_port : input_port);
+  if (output) std::swap(source_port_name, target_port_name);
+  int err = jack_connect(client, source_port_name, target_port_name);
+  if (err == EEXIST)
+  {
+    std::cout << "Ports " << source_port_name << " and " << target_port_name << " are already connected!" << std::endl;
+  }
+  else if (err)
+  {
+    THROW_ALERTC(err, "jack_connect: Cannot connect port \"[PORT1]\" to \"[PORT2]\"",
+	AIArgs("[PORT1]", source_port_name)("[PORT2]", target_port_name));
+  }
+}
+
 int main(void)
 {
 #ifdef DEBUGGLOBAL
@@ -59,11 +78,9 @@ int main(void)
 
   try
   {
-    jack_client_t* client;
-    char const** ports;
-
     // Try to become a client of the JACK server.
-    if ((client = jack_client_open("Speech", JackNoStartServer, NULL)) == NULL)
+    jack_client_t* client = jack_client_open("Speech", JackNoStartServer, NULL);
+    if (!client)
     {
       THROW_ALERT("Could not open jack client \"[NAME]\". Is the JACK server not running?",
 	  AIArgs("[NAME]", "Speech"));
@@ -95,41 +112,8 @@ int main(void)
     // the client is activated, because we can't allow
     // connections to be made to clients that aren't
     // running.
-    if ((ports = jack_get_ports(client, NULL, NULL, JackPortIsPhysical|JackPortIsOutput)) == NULL)
-    {
-      THROW_ALERT("Cannot find any physical capture ports.");
-    }
-
-    err = jack_connect(client, ports[0], jack_port_name(input_port));
-    if (err == EEXIST)
-    {
-      std::cout << "Ports " << ports[0] << " and " << jack_port_name(input_port) << " are already connected!" << std::endl;
-    }
-    else if (err)
-    {
-      THROW_ALERTC(err, "jack_connect: Cannot connect input ports \"[PORT1]\" and \"[PORT2]\"",
-	  AIArgs("[PORT1]", ports[0])("[PORT2]", jack_port_name(input_port)));
-    }
-
-    free(ports);
-
-    if ((ports = jack_get_ports(client, NULL, NULL, JackPortIsPhysical|JackPortIsInput)) == NULL)
-    {
-      THROW_ALERT("Cannot find any physical playback ports.");
-    }
-
-    err = jack_connect(client, jack_port_name(output_port), ports[0]);
-    if (err == EEXIST)
-    {
-      std::cout << "Ports " << ports[0] << " and " << jack_port_name(input_port) << " are already connected!" << std::endl;
-    }
-    else if (err)
-    {
-      THROW_ALERTC(err, "jack_connect: Cannot connect output ports \"[PORT1]\" and \"[PORT2]\"",
-	  AIArgs("[PORT1]", jack_port_name(output_port))("[PORT2]", ports[0]));
-    }
-
-    free(ports);
+    connect_to(client, true);
+    connect_to(client, false);
 
     // Since this is just a toy, run for a few seconds, then finish.
 
