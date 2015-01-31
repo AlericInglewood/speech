@@ -13,6 +13,7 @@ DEFAULT_INCLUDES=-iquote $(top_builddir) -iquote $(top_builddir)/src -iquote $(s
 CXXFLAGS =
 
 speech_SOURCES = \
+	JackClient.cpp \
 	Ports.cpp \
 	speech.cpp
 
