@@ -14,7 +14,7 @@ CXXFLAGS =
 
 speech_SOURCES = \
 	JackClient.cpp \
-	Ports.cpp \
+	JackPorts.cpp \
 	speech.cpp
 
 speech_CXXFLAGS = @CXXFLAGS@ @LIBCWD_FLAGS@ @LIBJACK_CFLAGS@

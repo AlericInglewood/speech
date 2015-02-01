@@ -1,6 +1,6 @@
 /**
- * /file Ports.cpp
- * /brief A wrapper around jack_get_ports.
+ * /file JackPorts.cpp
+ * /brief Implementation of JackPorts.
  *
  * Copyright (C) 2015 Aleric Inglewood.
  *
@@ -20,13 +20,13 @@
 
 #include "sys.h"
 
-#include "Ports.h"
+#include "JackPorts.h"
 #include "utils/AIAlert.h"
 
 extern jack_port_t* input_port;
 extern jack_port_t* output_port;
 
-char const* Ports::get(unsigned long flags)
+char const* JackPorts::get(unsigned long flags)
 {
   if (m_ports)
   {
@@ -54,7 +54,7 @@ char const* Ports::get(unsigned long flags)
   return m_ports[0];
 }
 
-void Ports::release(void)
+void JackPorts::release(void)
 {
   if (m_ports)
   {

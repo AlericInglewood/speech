@@ -1,6 +1,6 @@
 /**
- * /file Ports.h
- * /brief Wrapper around jack_get_ports.
+ * /file JackPorts.h
+ * /brief Declaration of JackPorts.
  *
  * Copyright (C) 2015 Aleric Inglewood.
  *
@@ -18,23 +18,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PORTS_H
-#define PORTS_H
+#ifndef JACK_PORTS_H
+#define JACK_PORTS_H
 
 #include <jack/jack.h>
 
-class Ports {
+class JackPorts {
   private:
     char const** m_ports;
     unsigned long m_flags;
     jack_client_t* m_client;
 
   public:
-    Ports(jack_client_t* client) : m_ports(NULL), m_client(client) { }
-    ~Ports() { release(); }
+    JackPorts(jack_client_t* client) : m_ports(NULL), m_client(client) { }
+    ~JackPorts() { release(); }
 
     char const* get(unsigned long flags);
     void release(void);
 };
 
-#endif // PORTS_H
+#endif // JACK_PORTS_H

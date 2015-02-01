@@ -26,7 +26,7 @@
 #include <iostream>
 
 #include "JackClient.h"
-#include "Ports.h"
+#include "JackPorts.h"
 #include "utils/AIAlert.h"
 
 //static
@@ -96,7 +96,7 @@ void JackClient::activate(void)
 // Connect input or output port.
 void JackClient::connect(bool connect_output)
 {
-  Ports ports(m_client);
+  JackPorts ports(m_client);
   char const* source_port_name = ports.get(JackPortIsPhysical | (connect_output ? JackPortIsInput : JackPortIsOutput));
   char const* target_port_name = jack_port_name(connect_output ? m_output_port : m_input_port);
   if (connect_output) std::swap(source_port_name, target_port_name);
