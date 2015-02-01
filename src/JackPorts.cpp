@@ -23,9 +23,6 @@
 #include "JackPorts.h"
 #include "utils/AIAlert.h"
 
-extern jack_port_t* input_port;
-extern jack_port_t* output_port;
-
 char const* JackPorts::get(unsigned long flags)
 {
   if (m_ports)
