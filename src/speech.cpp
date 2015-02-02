@@ -22,9 +22,13 @@
 
 #include <iostream>
 #include <cerrno>
+#include <cstdlib>
+#include <string>
+#include <boost/filesystem.hpp>
 
 #include "debug.h"
 #include "JackClient.h"
+#include "Configuration.h"
 #include "utils/debug_ostream_operators.h"
 #include "utils/AIAlert.h"
 #include "utils/GlobalObjectManager.h"
@@ -38,6 +42,23 @@ int main(void)
 
   try
   {
+    // Create and/or read the configuration file.
+    char const* home = getenv("HOME");
+    if (!home)
+    {
+      std::cerr << "HOME environment variable is not set." << std::endl;
+      exit(1);
+    }
+    boost::filesystem::path config_path(home);
+    config_path += "/.config/speech/";
+    if (!boost::filesystem::exists(config_path))
+    {
+      boost::filesystem::create_directories(config_path);
+    }
+    config_path += "config.xml";
+    Configuration config(config_path);
+
+    // Create the jack client.
     JackClient jack_client("Speech");
 
     // Connect the ports. Note: you can't do this before
@@ -45,8 +66,7 @@ int main(void)
     // connections to be made to clients that aren't
     // running.
     jack_client.activate();
-    jack_client.connect(true);
-    jack_client.connect(false);
+    jack_client.connect(config);
 
     // Since this is just a toy, run for a few seconds, then finish.
     sleep(10);

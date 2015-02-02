@@ -27,6 +27,7 @@
 
 #include "JackClient.h"
 #include "JackPorts.h"
+#include "Configuration.h"
 #include "utils/AIAlert.h"
 
 //static
@@ -94,20 +95,39 @@ void JackClient::activate(void)
 }
 
 // Connect input or output port.
-void JackClient::connect(bool connect_output)
+void JackClient::connect(Configuration& config)
 {
+  bool needs_update = false;
   JackPorts ports(m_client);
-  char const* source_port_name = ports.get(JackPortIsPhysical | (connect_output ? JackPortIsInput : JackPortIsOutput));
-  char const* target_port_name = jack_port_name(connect_output ? m_output_port : m_input_port);
-  if (connect_output) std::swap(source_port_name, target_port_name);
-  int err = jack_connect(m_client, source_port_name, target_port_name);
-  if (err == EEXIST)
+  // First connect output then input.
+  for (int connect_output = 1; connect_output >= 0; --connect_output)
   {
-    std::cout << "Ports " << source_port_name << " and " << target_port_name << " are already connected!" << std::endl;
+    // Do some magic to define the correct values to source_port_name and target_port_name.
+    std::string source_port_name = connect_output ? config.get_playback_port() : config.get_capture_port();
+    if (source_port_name.empty())
+    {
+      source_port_name = ports.get(JackPortIsPhysical | (connect_output ? JackPortIsInput : JackPortIsOutput));
+      if (connect_output)
+	config.set_playback_port(source_port_name);
+      else
+	config.set_capture_port(source_port_name);
+      needs_update = true;
+    }
+    std::string target_port_name = jack_port_name(connect_output ? m_output_port : m_input_port);
+    if (connect_output) std::swap(source_port_name, target_port_name);
+
+    // Connect port source_port_name to target_port_name.
+    int err = jack_connect(m_client, source_port_name.c_str(), target_port_name.c_str());
+    if (err == EEXIST)
+    {
+      std::cout << "Ports " << source_port_name << " and " << target_port_name << " are already connected!" << std::endl;
+    }
+    else if (err)
+    {
+      THROW_ALERTC(err, "jack_connect: Cannot connect port \"[PORT1]\" to \"[PORT2]\"",
+	  AIArgs("[PORT1]", source_port_name)("[PORT2]", target_port_name));
+    }
   }
-  else if (err)
-  {
-    THROW_ALERTC(err, "jack_connect: Cannot connect port \"[PORT1]\" to \"[PORT2]\"",
-	AIArgs("[PORT1]", source_port_name)("[PORT2]", target_port_name));
-  }
+  if (needs_update)
+    config.update();
 }

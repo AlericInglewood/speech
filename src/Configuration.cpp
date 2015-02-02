@@ -1,6 +1,6 @@
 /**
- * /file JackClient.h
- * /brief Jack client for speech recognition.
+ * /file Configuration.cpp
+ * /brief Implementation of class Configuration.
  *
  * Copyright (C) 2015 Aleric Inglewood.
  *
@@ -18,32 +18,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef JACK_CLIENT_H
-#define JACK_CLIENT_H
+#include "sys.h"
 
-#include <jack/jack.h>
+#include "Configuration.h"
 
-class Configuration;
+void Configuration::xml(xml::Bridge& xml)
+{
+  xml.node_name("configuration");
+  xml.child_stream("capture", m_capture_port);
+  xml.child_stream("playback", m_playback_port);
+}
 
-class JackClient {
-  private:
-    jack_client_t* m_client;
+void Configuration::set_capture_port(std::string const& capture_port)
+{
+  m_changed |= capture_port != m_capture_port;
+  m_capture_port = capture_port;
+}
 
-    jack_port_t* m_input_port;
-    jack_port_t* m_output_port;
-
-  public:
-    JackClient(char const* name);
-    ~JackClient();
-    void activate(void);
-    void connect(Configuration& config);
-
-  private:
-    static void shutdown_cb(void* self);
-    static int process_cb(jack_nframes_t nframes, void* self);
-
-  protected:
-    int process(jack_nframes_t nframes);
-};
-
-#endif // JACK_CLIENT_H
+void Configuration::set_playback_port(std::string const& playback_port)
+{
+  m_changed |= playback_port != m_playback_port;
+  m_playback_port = playback_port;
+}

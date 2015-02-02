@@ -13,12 +13,14 @@ DEFAULT_INCLUDES=-iquote $(top_builddir) -iquote $(top_builddir)/src -iquote $(s
 CXXFLAGS =
 
 speech_SOURCES = \
+	Persist.cpp \
+	Configuration.cpp \
 	JackClient.cpp \
 	JackPorts.cpp \
 	speech.cpp
 
-speech_CXXFLAGS = @CXXFLAGS@ @LIBCWD_FLAGS@ @LIBJACK_CFLAGS@
-speech_LDADD = xml/.libs/libxml.a utils/.libs/libutils.a cwd/.libs/libdebug.a @LIBS@ @LIBCWD_LIBS@ @LIBJACK_LIBS@
+speech_CXXFLAGS = @LIBXML_CFLAGS@ @CXXFLAGS@ @LIBCWD_FLAGS@ @LIBJACK_CFLAGS@
+speech_LDADD = xml/.libs/libxml.a utils/.libs/libutils.a cwd/.libs/libdebug.a @LIBXML_LIBS@ @LIBS@ @LIBCWD_LIBS@ @LIBJACK_LIBS@
 speech_DEPENDENCIES = xml/libxml.la utils/libutils.la cwd/libdebug.la
 
 # --------------- Maintainer's Section

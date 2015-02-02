@@ -1,6 +1,6 @@
 /**
- * /file JackClient.h
- * /brief Jack client for speech recognition.
+ * /file Persist.cpp
+ * /brief Implementation of Persist.
  *
  * Copyright (C) 2015 Aleric Inglewood.
  *
@@ -18,32 +18,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef JACK_CLIENT_H
-#define JACK_CLIENT_H
+#include "sys.h"
 
-#include <jack/jack.h>
+#include "Persist.h"
+#include "xml/Reader.h"
+#include "xml/Writer.h"
 
-class Configuration;
+#include <boost/filesystem/fstream.hpp>
 
-class JackClient {
-  private:
-    jack_client_t* m_client;
+void Persist::read_from_disk(void)
+{
+  xml::Reader reader;
+  reader.parse(m_path, 1);
+  xml(reader);
+}
 
-    jack_port_t* m_input_port;
-    jack_port_t* m_output_port;
-
-  public:
-    JackClient(char const* name);
-    ~JackClient();
-    void activate(void);
-    void connect(Configuration& config);
-
-  private:
-    static void shutdown_cb(void* self);
-    static int process_cb(jack_nframes_t nframes, void* self);
-
-  protected:
-    int process(jack_nframes_t nframes);
-};
-
-#endif // JACK_CLIENT_H
+void Persist::write_to_disk(void)
+{
+  boost::filesystem::ofstream stream;
+  stream.open(m_path);
+  xml::Writer writer(stream);
+  writer.write(*this);
+}
