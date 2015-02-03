@@ -29,6 +29,15 @@ void Configuration::xml(xml::Bridge& xml)
   xml.child_stream("playback", m_playback_port);
 }
 
+void Configuration::set_path(boost::filesystem::path const& path)
+{
+  update();
+  Persist::set_path(path);
+  m_changed = !boost::filesystem::exists(path);
+  if (!m_changed)
+    read_from_disk();
+}
+
 void Configuration::set_capture_port(std::string const& capture_port)
 {
   m_changed |= capture_port != m_capture_port;
@@ -40,3 +49,5 @@ void Configuration::set_playback_port(std::string const& playback_port)
   m_changed |= playback_port != m_playback_port;
   m_playback_port = playback_port;
 }
+
+static SingletonInstance<Configuration> dummy __attribute__ ((__unused__));

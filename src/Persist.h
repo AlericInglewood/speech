@@ -29,8 +29,10 @@ class Persist {
     boost::filesystem::path m_path;
 
   public:
+    Persist(void) { }
     Persist(boost::filesystem::path const& path) : m_path(path) { }
 
+    void set_path(boost::filesystem::path const& path) { m_path = path; }
     void read_from_disk(void);
     void write_to_disk(void);
 

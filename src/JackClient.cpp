@@ -95,7 +95,7 @@ void JackClient::activate(void)
 }
 
 // Connect input or output port.
-void JackClient::connect(Configuration& config)
+void JackClient::connect(void)
 {
   bool needs_update = false;
   JackPorts ports(m_client);
@@ -103,14 +103,16 @@ void JackClient::connect(Configuration& config)
   for (int connect_output = 1; connect_output >= 0; --connect_output)
   {
     // Do some magic to define the correct values to source_port_name and target_port_name.
-    std::string source_port_name = connect_output ? config.get_playback_port() : config.get_capture_port();
+    std::string source_port_name =
+      connect_output ? Singleton<Configuration>::instance().get_playback_port()
+                     : Singleton<Configuration>::instance().get_capture_port();
     if (source_port_name.empty())
     {
       source_port_name = ports.get(JackPortIsPhysical | (connect_output ? JackPortIsInput : JackPortIsOutput));
       if (connect_output)
-	config.set_playback_port(source_port_name);
+	Singleton<Configuration>::instance().set_playback_port(source_port_name);
       else
-	config.set_capture_port(source_port_name);
+	Singleton<Configuration>::instance().set_capture_port(source_port_name);
       needs_update = true;
     }
     std::string target_port_name = jack_port_name(connect_output ? m_output_port : m_input_port);
@@ -129,5 +131,5 @@ void JackClient::connect(Configuration& config)
     }
   }
   if (needs_update)
-    config.update();
+    Singleton<Configuration>::instance().update();
 }

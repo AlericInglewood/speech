@@ -56,7 +56,7 @@ int main(void)
       boost::filesystem::create_directories(config_path);
     }
     config_path += "config.xml";
-    Configuration config(config_path);
+    Singleton<Configuration>::instance().set_path(config_path);
 
     // Create the jack client.
     JackClient jack_client("Speech");
@@ -66,7 +66,7 @@ int main(void)
     // connections to be made to clients that aren't
     // running.
     jack_client.activate();
-    jack_client.connect(config);
+    jack_client.connect();
 
     // Since this is just a toy, run for a few seconds, then finish.
     sleep(10);

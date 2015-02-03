@@ -36,7 +36,7 @@ class JackClient {
     JackClient(char const* name);
     ~JackClient();
     void activate(void);
-    void connect(Configuration& config);
+    void connect(void);
 
   private:
     static void shutdown_cb(void* self);

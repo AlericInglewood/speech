@@ -22,19 +22,21 @@
 #define CONFIGURATION_H
 
 #include "Persist.h"
+#include "utils/Singleton.h"
 #include <string>
 
-class Configuration : public Persist {
-  public:
-    Configuration(boost::filesystem::path const& path) :
-      Persist(path), m_changed(!boost::filesystem::exists(path))
-      { if (!m_changed) read_from_disk(); }
+class Configuration : public Persist, Singleton<Configuration> {
+    friend_Instance;
+  private:
+    Configuration(void) : m_changed(false) { }
     ~Configuration() { update(); }
+    Configuration(Configuration const&);
 
   protected:
     /*virtual*/ void xml(xml::Bridge& xml);
 
   public:
+    void set_path(boost::filesystem::path const& path);
     void set_capture_port(std::string const& capture_port);
     void set_playback_port(std::string const& playback_port);
     void update(void) { if (m_changed) write_to_disk(); }
