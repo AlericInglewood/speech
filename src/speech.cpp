@@ -69,7 +69,7 @@ int main(void)
     jack_client.connect();
 
     // Since this is just a toy, run for a few seconds, then finish.
-    sleep(10);
+    sleep(120);
   }
   catch (AIAlert::ErrorCode const& error)
   {

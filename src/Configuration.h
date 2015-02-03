@@ -24,6 +24,7 @@
 #include "Persist.h"
 #include "utils/Singleton.h"
 #include <string>
+#include <set>
 
 class Configuration : public Persist, Singleton<Configuration> {
     friend_Instance;
@@ -37,17 +38,17 @@ class Configuration : public Persist, Singleton<Configuration> {
 
   public:
     void set_path(boost::filesystem::path const& path);
-    void set_capture_port(std::string const& capture_port);
-    void set_playback_port(std::string const& playback_port);
+    void set_capture_ports(std::set<std::string> const& capture_ports);
+    void set_playback_ports(std::set<std::string> const& playback_ports);
     void update(void) { if (m_changed) write_to_disk(); }
 
-    std::string const& get_capture_port(void) const { return m_capture_port; }
-    std::string const& get_playback_port(void) const { return m_playback_port; }
+    std::set<std::string> const& get_capture_ports(void) const { return m_capture_ports; }
+    std::set<std::string> const& get_playback_ports(void) const { return m_playback_ports; }
 
   private:
     bool m_changed;
-    std::string m_playback_port;	//!< Name of the jack playback port.
-    std::string m_capture_port;		//!< Name of the jack capture port.
+    std::set<std::string> m_playback_ports;	//!< Name of the jack playback ports.
+    std::set<std::string> m_capture_ports;	//!< Name of the jack capture ports.
 };
 
 #endif // CONFIGURATION_H

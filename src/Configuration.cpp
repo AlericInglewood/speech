@@ -25,8 +25,8 @@
 void Configuration::xml(xml::Bridge& xml)
 {
   xml.node_name("configuration");
-  xml.child_stream("capture", m_capture_port);
-  xml.child_stream("playback", m_playback_port);
+  xml.children_stream("capture", m_capture_ports, xml::insert);
+  xml.children_stream("playback", m_playback_ports, xml::insert);
 }
 
 void Configuration::set_path(boost::filesystem::path const& path)
@@ -38,16 +38,16 @@ void Configuration::set_path(boost::filesystem::path const& path)
     read_from_disk();
 }
 
-void Configuration::set_capture_port(std::string const& capture_port)
+void Configuration::set_capture_ports(std::set<std::string> const& capture_ports)
 {
-  m_changed |= capture_port != m_capture_port;
-  m_capture_port = capture_port;
+  m_changed |= capture_ports != m_capture_ports;
+  m_capture_ports = capture_ports;
 }
 
-void Configuration::set_playback_port(std::string const& playback_port)
+void Configuration::set_playback_ports(std::set<std::string> const& playback_ports)
 {
-  m_changed |= playback_port != m_playback_port;
-  m_playback_port = playback_port;
+  m_changed |= playback_ports != m_playback_ports;
+  m_playback_ports = playback_ports;
 }
 
 static SingletonInstance<Configuration> dummy __attribute__ ((__unused__));

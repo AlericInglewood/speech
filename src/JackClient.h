@@ -41,9 +41,11 @@ class JackClient {
   private:
     static void shutdown_cb(void* self);
     static int process_cb(jack_nframes_t nframes, void* self);
+    static void port_connect_cb(jack_port_id_t a, jack_port_id_t b, int yn, void* self);
 
   protected:
     int process(jack_nframes_t nframes);
+    void port_connect(jack_port_id_t a, jack_port_id_t b, int yn);
 };
 
 #endif // JACK_CLIENT_H
