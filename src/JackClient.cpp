@@ -159,8 +159,11 @@ void JackClient::port_connect(jack_port_id_t a, jack_port_id_t b, int)
     assert(jack_port_flags(port_a) == JackPortIsOutput);
     char const** array = jack_port_get_connections(port_a);
     std::set<std::string> playback_ports;
-    for (char const** ptr = array; *ptr; ++ptr) playback_ports.insert(*ptr);
-    jack_free(array);
+    if (array)
+    {
+      for (char const** ptr = array; *ptr; ++ptr) playback_ports.insert(*ptr);
+      jack_free(array);
+    }
     Singleton<Configuration>::instance().set_playback_ports(playback_ports);
   }
   if (jack_port_is_mine(m_client, port_b))
@@ -169,8 +172,11 @@ void JackClient::port_connect(jack_port_id_t a, jack_port_id_t b, int)
     assert(jack_port_flags(port_b) == JackPortIsInput);
     char const** array = jack_port_get_connections(port_b);
     std::set<std::string> capture_ports;
-    for (char const** ptr = array; *ptr; ++ptr) capture_ports.insert(*ptr);
-    jack_free(array);
+    if (array)
+    {
+      for (char const** ptr = array; *ptr; ++ptr) capture_ports.insert(*ptr);
+      jack_free(array);
+    }
     Singleton<Configuration>::instance().set_capture_ports(capture_ports);
   }
   Singleton<Configuration>::instance().update();
