@@ -28,6 +28,8 @@ class Configuration;
 class JackClient {
   private:
     jack_client_t* m_client;
+    jack_nframes_t m_nframes;
+    jack_nframes_t m_buffer_size;
 
     jack_port_t* m_input_port;
     jack_port_t* m_output_port;
@@ -39,13 +41,21 @@ class JackClient {
     void connect(void);
 
   private:
+    static void thread_init_cb(void* self);
     static void shutdown_cb(void* self);
+    static int sample_rate_cb(jack_nframes_t nframes, void* self);
+    static int buffer_size_cb(jack_nframes_t buffer_size, void* self);
     static int process_cb(jack_nframes_t nframes, void* self);
     static void port_connect_cb(jack_port_id_t a, jack_port_id_t b, int yn, void* self);
+    static void latency_cb(jack_latency_callback_mode_t mode, void* self);
 
   protected:
+    void thread_init(void);
+    int sample_rate(jack_nframes_t nframes);
+    int buffer_size(jack_nframes_t buffer_size);
     int process(jack_nframes_t nframes);
     void port_connect(jack_port_id_t a, jack_port_id_t b, int yn);
+    void latency(jack_latency_callback_mode_t mode);
 };
 
 #endif // JACK_CLIENT_H

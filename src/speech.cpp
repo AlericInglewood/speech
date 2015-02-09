@@ -68,8 +68,8 @@ int main(void)
     jack_client.activate();
     jack_client.connect();
 
-    // Since this is just a toy, run for a few seconds, then finish.
-    sleep(120);
+    // Run until killed by the user.
+    sleep(-1);
   }
   catch (AIAlert::ErrorCode const& error)
   {
