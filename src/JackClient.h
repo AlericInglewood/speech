@@ -26,17 +26,17 @@
 class Configuration;
 
 class JackClient {
-  private:
+  protected:
     jack_client_t* m_client;
-    jack_nframes_t m_nframes;
-    jack_nframes_t m_buffer_size;
+    jack_nframes_t m_sample_rate;
+    jack_nframes_t m_input_buffer_size;
 
     jack_port_t* m_input_port;
     jack_port_t* m_output_port;
 
   public:
     JackClient(char const* name);
-    ~JackClient();
+    virtual ~JackClient();
     void activate(void);
     void connect(void);
 
@@ -50,12 +50,15 @@ class JackClient {
     static void latency_cb(jack_latency_callback_mode_t mode, void* self);
 
   protected:
-    void thread_init(void);
-    int sample_rate(jack_nframes_t nframes);
-    int buffer_size(jack_nframes_t buffer_size);
-    int process(jack_nframes_t nframes);
-    void port_connect(jack_port_id_t a, jack_port_id_t b, int yn);
-    void latency(jack_latency_callback_mode_t mode);
+    virtual void thread_init(void) { }
+    virtual void shutdown(void) { }
+    virtual int sample_rate_changed(void) { return 0; }
+    virtual int buffer_size_changed(void) { return 0; }
+    virtual void port_connect(jack_port_id_t a, jack_port_id_t b, int yn);
+    virtual void latency(jack_latency_callback_mode_t mode);
+    virtual void calculate_delay(jack_latency_range_t& range) { range.min = range.max = 0; }
+
+    virtual int process(jack_default_audio_sample_t* in, jack_default_audio_sample_t* out, jack_nframes_t nframes) = 0;
 };
 
 #endif // JACK_CLIENT_H

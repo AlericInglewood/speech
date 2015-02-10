@@ -24,7 +24,9 @@
 #include <cstring>
 #include <utility>
 #include <iostream>
+#include <cassert>
 
+#include "debug.h"
 #include "JackClient.h"
 #include "JackPorts.h"
 #include "Configuration.h"
@@ -33,18 +35,16 @@
 //static
 void JackClient::thread_init_cb(void* self)
 {
+  Debug(debug::init_thread());
   JackClient* client = static_cast<JackClient*>(self);
   client->thread_init();
 }
 
-void JackClient::thread_init(void)
-{
-  Debug(debug::init_thread());
-}
-
 //static
-void JackClient::shutdown_cb(void* UNUSED_ARG(self))
+void JackClient::shutdown_cb(void* self)
 {
+  JackClient* client = static_cast<JackClient*>(self);
+  client->shutdown();
   exit(1);
 }
 
@@ -52,21 +52,12 @@ void JackClient::shutdown_cb(void* UNUSED_ARG(self))
 int JackClient::process_cb(jack_nframes_t nframes, void* self)
 {
   JackClient* client = static_cast<JackClient*>(self);
-  return client->process(nframes);
+  jack_default_audio_sample_t* in = (jack_default_audio_sample_t*)jack_port_get_buffer(client->m_input_port, nframes);
+  jack_default_audio_sample_t* out = (jack_default_audio_sample_t*)jack_port_get_buffer(client->m_output_port, nframes);
+  return client->process(in, out, nframes);
 }
 
-int JackClient::process(jack_nframes_t nframes)
-{
-  jack_default_audio_sample_t* out = (jack_default_audio_sample_t*)jack_port_get_buffer(m_output_port, nframes);
-  jack_default_audio_sample_t* in = (jack_default_audio_sample_t*)jack_port_get_buffer(m_input_port, nframes);
-
-  //std::cout << "Copying " << nframes << " frames, each of " << sizeof(jack_default_audio_sample_t) << " bytes." << std::endl;
-  std::memcpy(out, in, sizeof(jack_default_audio_sample_t) * nframes);
-
-  return 0;
-}
-
-JackClient::JackClient(char const* name) : m_nframes(0)
+JackClient::JackClient(char const* name) : m_sample_rate(0), m_input_buffer_size(0)
 {
   // Try to become a client of the JACK server.
   m_client = jack_client_open(name, JackNoStartServer, NULL);
@@ -110,34 +101,18 @@ JackClient::JackClient(char const* name) : m_nframes(0)
 int JackClient::sample_rate_cb(jack_nframes_t nframes, void* self)
 {
   JackClient* client = static_cast<JackClient*>(self);
-  return client->sample_rate(nframes);
-}
-
-int JackClient::sample_rate(jack_nframes_t nframes)
-{
-  m_nframes = nframes;
-
-  // Display the current sample rate.
-  std::cout << "Engine sample rate: " << m_nframes << " Hz." << std::endl;
-
-  return 0;
+  client->m_sample_rate = nframes;
+  Dout(dc::notice, "Engine sample rate: " << nframes << " Hz.");
+  return client->sample_rate_changed();
 }
 
 //static
 int JackClient::buffer_size_cb(jack_nframes_t buffer_size, void* self)
 {
   JackClient* client = static_cast<JackClient*>(self);
-  return client->buffer_size(buffer_size);
-}
-
-int JackClient::buffer_size(jack_nframes_t buffer_size)
-{
-  m_buffer_size = buffer_size;
-
-  // Display the current sample rate.
-  std::cout << "Buffer size: " << m_buffer_size << " samples." << std::endl;
-
-  return 0;
+  client->m_input_buffer_size = buffer_size;
+  Dout(dc::notice, "Input buffer size: " << buffer_size << " samples.");
+  return client->buffer_size_changed();
 }
 
 JackClient::~JackClient()
@@ -207,10 +182,16 @@ void JackClient::port_connect_cb(jack_port_id_t a, jack_port_id_t b, int yn, voi
   client->port_connect(a, b, yn);
 }
 
-void JackClient::port_connect(jack_port_id_t a, jack_port_id_t b, int)
+void JackClient::port_connect(jack_port_id_t a, jack_port_id_t b, int
+#ifdef CWDEBUG
+    what
+#endif
+    )
 {
   jack_port_t const* port_a = jack_port_by_id(m_client, a);
   jack_port_t const* port_b = jack_port_by_id(m_client, b);
+  DoutEntering(dc::notice, "JackClient::port_connect(\"" << jack_port_name(port_a) << "\", \"" << jack_port_name(port_b) << "\", " << what << ")");
+
   if (jack_port_is_mine(m_client, port_a))
   {
     assert(strcmp(jack_port_short_name(port_a), "output") == 0);
@@ -253,52 +234,35 @@ void JackClient::latency(jack_latency_callback_mode_t mode)
   jack_latency_range_t range;
   range.min = 1000000;
   range.max = 0;
-  if (mode == JackPlaybackLatency)
+  jack_port_t* our_port = (mode == JackPlaybackLatency) ? m_input_port : m_output_port;
+  char const** connected_ports = jack_port_get_connections(our_port);
+  if (connected_ports)
   {
-    char const** ports_feeding_input_port = jack_port_get_connections(m_input_port);
-    if (ports_feeding_input_port)
+    char const** ptr = connected_ports;
+    assert(*ptr);	// Otherwise start with the while and don't call jack_port_set_latency_range when range is still 1000000, 0.
+    do
     {
-      char const** ptr = ports_feeding_input_port;
-      do
-      {
-	jack_port_t* port_feeding_input_port = jack_port_by_name(m_client, *ptr);
-	jack_latency_range_t port_range;
-	jack_port_get_latency_range(port_feeding_input_port, JackPlaybackLatency, &port_range);
-	range.min = std::min(range.min, port_range.min);
-	range.max = std::max(range.max, port_range.max);
-      }
-      while(*++ptr);
-      jack_free(ports_feeding_input_port);
-      // No extra delay on the input(s). Since we only have one input and one output
-      // port, we're free to add all delay on the output port.
-      Dout(dc::notice, "Calling jack_port_set_latency_range(m_input_port, JackCaptureLatency, {" <<
-	  range.min << ", " << range.max << "})");
-      jack_port_set_latency_range(m_input_port, JackPlaybackLatency, &range);
+      jack_port_t* port = jack_port_by_name(m_client, *ptr);
+      jack_latency_range_t port_latency_range;
+      jack_port_get_latency_range(port, mode, &port_latency_range);
+      range.min = std::min(range.min, port_latency_range.min);
+      range.max = std::max(range.max, port_latency_range.max);
     }
-  }
-  else if (mode == JackCaptureLatency)
-  {
-    char const** ports_fed_by_output_port = jack_port_get_connections(m_output_port);
-    if (ports_fed_by_output_port)
+    while(*++ptr);
+    jack_free(connected_ports);
+    // Since we only have one input and one output port, we're free to add all delay on the output port.
+    if (mode == JackCaptureLatency)
     {
-      char const** ptr = ports_fed_by_output_port;
-      {
-	jack_port_t* port_fed_by_output_port = jack_port_by_name(m_client, *ptr);
-	jack_latency_range_t port_range;
-	jack_port_get_latency_range(port_fed_by_output_port, JackCaptureLatency, &port_range);
-	range.min = std::min(range.min, port_range.min);
-	range.max = std::max(range.max, port_range.max);
-      }
-      while(*++ptr);
-      jack_free(ports_fed_by_output_port);
       // Calculate our delay.
-      jack_nframes_t delay = 0;
+      jack_latency_range_t delay;
+      calculate_delay(delay);
       // Update range.
-      range.min += delay;
-      range.max += delay;
-      jack_port_set_latency_range(m_output_port, JackCaptureLatency, &range);
-      Dout(dc::notice, "Calling jack_port_set_latency_range(m_output_port, JackCaptureLatency, {" <<
-	  range.min << ", " << range.max << "})");
+      range.min += delay.min;
+      range.max += delay.max;
     }
+    Dout(dc::notice, "Calling jack_port_set_latency_range(" <<
+	 ((mode == JackPlaybackLatency) ? "m_input_port, JackPlaybackLatency" : "m_output_port, JackCaptureLatency") <<
+	 ", {" << range.min << ", " << range.max << "})");
+    jack_port_set_latency_range(our_port, mode, &range);
   }
 }

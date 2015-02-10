@@ -27,7 +27,7 @@
 #include <boost/filesystem.hpp>
 
 #include "debug.h"
-#include "JackClient.h"
+#include "FFTJackClient.h"
 #include "Configuration.h"
 #include "utils/debug_ostream_operators.h"
 #include "utils/AIAlert.h"
@@ -59,7 +59,7 @@ int main(void)
     Singleton<Configuration>::instance().set_path(config_path);
 
     // Create the jack client.
-    JackClient jack_client("Speech");
+    FFTJackClient jack_client("Speech");
 
     // Connect the ports. Note: you can't do this before
     // the client is activated, because we can't allow
