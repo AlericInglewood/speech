@@ -78,9 +78,7 @@ CW_BOOST([$cw_enable_static], [no], [filesystem system])
 dnl Libraries.
 PKG_CHECK_MODULES([LIBJACK], [jack])
 PKG_CHECK_MODULES([LIBXML], [libxml++-2.6])
-dnl PKG_CHECK_MODULES([LIBGTKMM], [gtkmm-3.0])
-LIBGTKMM_CFLAGS="-pthread -I/usr/src/debian/gtkmm3.0-3.14.0/gtk -I/usr/include/atkmm-1.6 -I/usr/src/debian/gtk+3.0-3.14.5 -I/usr/src/debian/gtkmm3.0-3.14.0/gdk -I/usr/src/debian/glibmm2.4-2.42.0/gio -I/usr/include/pangomm-1.4 -I/usr/lib/x86_64-linux-gnu/pangomm-1.4/include -I/usr/src/debian/glibmm2.4-2.42.0/glib -I/usr/include/at-spi2-atk/2.0 -I/usr/include/at-spi-2.0 -I/usr/include/dbus-1.0 -I/usr/lib/x86_64-linux-gnu/dbus-1.0/include -I/usr/include/cairo -I/usr/include/pango-1.0 -I/usr/include/harfbuzz -I/usr/include/pango-1.0 -I/usr/include/atk-1.0 -I/usr/include/cairo -I/usr/include/pixman-1 -I/usr/include/freetype2 -I/usr/include/libpng12 -I/usr/include/sigc++-2.0 -I/usr/lib/x86_64-linux-gnu/sigc++-2.0/include -I/usr/include/gdk-pixbuf-2.0 -I/usr/include/libpng12 -I/usr/src/debian/glib2.0-2.43.4 -I/usr/src/debian/glib2.0-2.43.4/glib -I/usr/include/cairomm-1.0 -I/usr/lib/cairomm-1.0/include -I/usr/src/debian/gtk+3.0-3.14.5/debian/build/shared"
-LIBGTKMM_LIBS="-L/usr/src/debian/gtk+3.0-3.14.5/debian/build/shared/gtk/.libs -L/usr/src/debian/gtk+3.0-3.14.5/debian/build/shared/gdk/.libs -L/usr/src/debian/glib2.0-2.43.4/debian/build/deb/gio/.libs -L/usr/src/debian/glib2.0-2.43.4/debian/build/deb/gobject/.libs -L/usr/src/debian/glib2.0-2.43.4/debian/build/deb/glib/.libs -L/usr/src/debian/gtkmm3.0-3.14.0/gtk/gtkmm/.libs -L/usr/src/debian/gtkmm3.0-3.14.0/gdk/gdkmm/.libs -L/usr/src/debian/glibmm2.4-2.42.0/gio/giomm/.libs -L/usr/src/debian/glibmm2.4-2.42.0/glib/glibmm/.libs -lgtkmm-3.0 -latkmm-1.6 -lgdkmm-3.0 -lgiomm-2.4 -lpangomm-1.4 -lglibmm-2.4 -lgtk-3 -lgdk-3 -lpangocairo-1.0 -lpango-1.0 -latk-1.0 -lcairo-gobject -lgio-2.0 -lcairomm-1.0 -lcairo -lsigc-2.0 -lgdk_pixbuf-2.0 -lgobject-2.0 -lglib-2.0"
+PKG_CHECK_MODULES([LIBGTKMM], [gtkmm-3.0])
 AC_SUBST(LIBGTKMM_CFLAGS)
 AC_SUBST(LIBGTKMM_LIBS)
 

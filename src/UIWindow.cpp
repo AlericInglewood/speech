@@ -43,8 +43,6 @@ GtkWindow* UIWindow::read_glade(std::string const& glade_path, char const* windo
     THROW_ALERT("While reading [GLADE_PATH], could not find object '[WINDOW_NAME]'.",
 	AIArgs("[GLADE_PATH]", glade_path)("[WINDOW_NAME]", window_name));
   }
-
-  Dout(dc::notice, "Returning " << (void*)window);
   return window;
 }
 
@@ -55,16 +53,10 @@ UIWindow::UIWindow(Glib::RefPtr<Gtk::Application> const& refApp, std::string con
   m_refApp->hold();
 
   // Connect signals.
-
-  // When the user clicks the X in the upper right corner, we want to call the on_delete() method defined below.
-  signal_delete_event().connect(sigc::mem_fun(this, &UIWindow::on_delete));
-  // Call the on_hide() method when the UIWindow is hidden.
-  signal_hide().connect(sigc::mem_fun(this, &UIWindow::on_hide));
 }
 
 UIWindow::~UIWindow()
 {
-  DoutEntering(dc::notice, "UIWindow::~UIWindow()");
   // Do not terminate the application immediately because otherwise
   // the window is not removed from the screen and we get an annoying
   // pop-up from kwin saying "". g_application_run
@@ -75,16 +67,4 @@ UIWindow::~UIWindow()
 void UIWindow::on_button_clicked(void)
 {
   Dout(dc::notice, "Hello World");
-}
-
-bool UIWindow::on_delete(GdkEventAny* UNUSED_ARG(event))
-{
-  DoutEntering(dc::notice, "UIWindow::on_delete()");
-  // Return false so that the signal is handled further on, causing the window to be hidden.
-  return false;
-}
-
-void UIWindow::on_hide(void)
-{
-  DoutEntering(dc::notice, "UIWindow::on_hide()");
 }

@@ -40,8 +40,6 @@ class UIWindow : public Gtk::Window
   protected:
     // Signal handlers.
     void on_button_clicked(void);
-    bool on_delete(GdkEventAny* event);
-    void on_hide(void);
 };
 
 #endif // UI_WINDOW_H

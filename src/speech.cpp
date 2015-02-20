@@ -87,12 +87,7 @@ int main(void)
 
     // Show a GUI.
     Glib::RefPtr<Gtk::Application> refApp = Gtk::Application::create("com.alinoe.speech");
-    // Store refApp in UIWindow in order to Keep the application running (not return from run()), until
-    // the window is destructed (as result of the hide signal; ie, when the user clicks the close button).
-    UIWindow* pUIWindow = new UIWindow(refApp, glade_path, "window1");
-    Dout(dc::notice, "Entering run()");
-    refApp->run(*pUIWindow);
-    Dout(dc::notice, "Returned from run()");
+    refApp->run(*new UIWindow(refApp, glade_path, "window1"));
 
     // Run until killed by the user.
     sleep(-1);
