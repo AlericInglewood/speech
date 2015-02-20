@@ -17,4 +17,8 @@ if test ! -f $PREFIX/share/cwautomacros/scripts/autogen.sh; then
   exit 126
 fi
 
-exec $PREFIX/share/cwautomacros/scripts/autogen.sh
+$PREFIX/share/cwautomacros/scripts/autogen.sh
+
+if [ -n "$CONFIGURE_OPTIONS" ]; then
+  echo "The current configuration options are: $CONFIGURE_OPTIONS"
+fi
