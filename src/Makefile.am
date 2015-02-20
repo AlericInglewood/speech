@@ -18,10 +18,12 @@ speech_SOURCES = \
 	FFTJackClient.cpp \
 	JackClient.cpp \
 	JackPorts.cpp \
+	UIWindow.cpp \
 	speech.cpp
 
-speech_CXXFLAGS = @LIBXML_CFLAGS@ @CXXFLAGS@ @LIBCWD_FLAGS@ @LIBJACK_CFLAGS@
-speech_LDADD = xml/.libs/libxml.a utils/.libs/libutils.a cwd/.libs/libdebug.a @LIBXML_LIBS@ @LIBS@ @LIBCWD_LIBS@ @LIBJACK_LIBS@
+speech_CXXFLAGS = @LIBXML_CFLAGS@ @CXXFLAGS@ @LIBCWD_FLAGS@ @LIBJACK_CFLAGS@ @LIBGTKMM_CFLAGS@
+speech_LDFLAGS = -Wl,--export-dynamic
+speech_LDADD = xml/.libs/libxml.a utils/.libs/libutils.a cwd/.libs/libdebug.a @LIBXML_LIBS@ @LIBS@ @LIBCWD_LIBS@ @LIBJACK_LIBS@ @LIBGTKMM_LIBS@
 speech_DEPENDENCIES = xml/libxml.la utils/libutils.la cwd/libdebug.la
 
 # --------------- Maintainer's Section

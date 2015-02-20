@@ -33,6 +33,9 @@
 #include "utils/AIAlert.h"
 #include "utils/GlobalObjectManager.h"
 
+#include <gtkmm.h>
+#include "UIWindow.h"
+
 int main(void)
 {
 #ifdef DEBUGGLOBAL
@@ -58,6 +61,20 @@ int main(void)
     config_path += "config.xml";
     Singleton<Configuration>::instance().set_path(config_path);
 
+    // Find the UI glade file.
+    char const* speech_src = getenv("SRCROOT");	// This works in our special env.source build environment.
+    if (!speech_src)
+    {
+      THROW_ALERT("Environment variable SRCROOT not set. $SRCROOT/res/speechUI.glade must exist.");
+    }
+    std::string glade_path = std::string(speech_src) + "/res/speechUI.glade";
+    if (!boost::filesystem::exists(glade_path))
+    {
+      THROW_ALERT("[GLADE_PATH]: No such file or directory. "
+		  "Is your SRCROOT environment variable set correctly?",
+		  AIArgs("[GLADE_PATH]", glade_path));
+    }
+
     // Create the jack client.
     FFTJackClient jack_client("Speech");
 
@@ -67,6 +84,15 @@ int main(void)
     // running.
     jack_client.activate();
     jack_client.connect();
+
+    // Show a GUI.
+    Glib::RefPtr<Gtk::Application> refApp = Gtk::Application::create("com.alinoe.speech");
+    // Store refApp in UIWindow in order to Keep the application running (not return from run()), until
+    // the window is destructed (as result of the hide signal; ie, when the user clicks the close button).
+    UIWindow* pUIWindow = new UIWindow(refApp, glade_path, "window1");
+    Dout(dc::notice, "Entering run()");
+    refApp->run(*pUIWindow);
+    Dout(dc::notice, "Returned from run()");
 
     // Run until killed by the user.
     sleep(-1);
