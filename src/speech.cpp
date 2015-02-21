@@ -36,7 +36,7 @@
 #include <gtkmm.h>
 #include "UIWindow.h"
 
-int main(void)
+int main(int argc, char* argv[])
 {
 #ifdef DEBUGGLOBAL
   GlobalObjectManager::main_entered();
@@ -86,7 +86,7 @@ int main(void)
     jack_client.connect();
 
     // Show a GUI.
-    Glib::RefPtr<Gtk::Application> refApp = Gtk::Application::create("com.alinoe.speech");
+    Glib::RefPtr<Gtk::Application> refApp = Gtk::Application::create(argc, argv, "com.alinoe.speech");
     refApp->run(*new UIWindow(refApp, glade_path, "window1"));
 
     // Run until killed by the user.
