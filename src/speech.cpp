@@ -87,7 +87,10 @@ int main(int argc, char* argv[])
 
     // Show a GUI.
     Glib::RefPtr<Gtk::Application> refApp = Gtk::Application::create(argc, argv, "com.alinoe.speech");
-    refApp->run(*new UIWindow(refApp, glade_path, "window1"));
+    refApp->run(*new UIWindow(glade_path, "window1"));
+    // Bug workaround for https://bugzilla.gnome.org/show_bug.cgi?id=744876
+    // Let the mainloop run until all pending activity is handled.
+    while (g_main_context_iteration(NULL, FALSE)) ;
 
     // Run until killed by the user.
     sleep(-1);

@@ -26,18 +26,48 @@
 
 #include <gtkmm.h>
 
-//static
-GtkWindow* UIWindow::read_glade(std::string const& glade_path, char const* window_name)
+GladeBuilder::GladeBuilder(std::string const& glade_path, char const* window_name) :
+  m_refBuilder(create_from_file(glade_path, window_name))
 {
-  // This block is C code because we need a plain GtkWindow instead of a Gtk::Window.
-  // Otherwise we get a warning when wrapping the GtkWindow* in a Gtk::Window below,
-  // saying that is already wrapped.
+}
 
-  GtkBuilder* builder = gtk_builder_new_from_file(glade_path.c_str());
-  GtkWindow* window = GTK_WINDOW(gtk_builder_get_object(builder, window_name));
-  // Do not connect signals C-style though, because we need them to be connected
-  // C++-style, which is done in the constructor of UIWindow.
-  g_object_unref(G_OBJECT(builder));	// Delete the builder.
+Glib::RefPtr<Gtk::Builder> GladeBuilder::create_from_file(std::string const& glade_path, char const* window_name)
+{
+  Glib::RefPtr<Gtk::Builder> refBuilder;
+  try
+  {
+    // Read and parse the glade file into a new GtkBuilder object.
+    refBuilder = Gtk::Builder::create_from_file(glade_path.c_str(), window_name);
+  }
+  catch(Glib::FileError const& ex)
+  {
+    THROW_ALERT("While reading [GLADE_PATH], a Glib::FileError exception was thrown: [WHAT].",
+	AIArgs("[GLADE_PATH]", glade_path)("[WHAT]", ex.what()));
+  }
+  catch(Glib::MarkupError const& ex)
+  {
+    THROW_ALERT("While reading [GLADE_PATH], a Glib::MarkupError exception was thrown: [WHAT].",
+	AIArgs("[GLADE_PATH]", glade_path)("[WHAT]", ex.what()));
+  }
+  catch(Gtk::BuilderError const& ex)
+  {
+    THROW_ALERT("While reading [GLADE_PATH], a Glib::BuilderError exception was thrown: [WHAT].",
+	AIArgs("[GLADE_PATH]", glade_path)("[WHAT]", ex.what()));
+  }
+  return refBuilder;
+}
+
+GtkWindow* GladeBuilder::get_window(std::string const& glade_path, char const* window_name)
+{
+  // Get and return a C-style window object (GtkWindow*) because otherwise we'll get
+  // a warning when wrapping the GtkWindow* in the Gtk::Window base class of UIWindow,
+  // saying that is already wrapped.
+  GtkWindow* window = GTK_WINDOW(gtk_builder_get_object(m_refBuilder->gobj(), window_name));
+
+  // Do not connect signals C-style, because we need them to be connected C++-style,
+  // which is done in the constructor of UIWindow.
+
+  // Return result, if any.
   if (!window)
   {
     THROW_ALERT("While reading [GLADE_PATH], could not find object '[WINDOW_NAME]'.",
@@ -46,22 +76,19 @@ GtkWindow* UIWindow::read_glade(std::string const& glade_path, char const* windo
   return window;
 }
 
-UIWindow::UIWindow(Glib::RefPtr<Gtk::Application> const& refApp, std::string const& glade_path, char const* window_name) :
-    Gtk::Window(read_glade(glade_path, window_name)), m_refApp(refApp)
+UIWindow::UIWindow(std::string const& glade_path, char const* window_name) :
+  GladeBuilder(glade_path, window_name),				// Initialize the builder in the GladeBuilder base class.
+  Gtk::Window(GladeBuilder::get_window(glade_path, window_name)) 	// Get the window from the builder and wrap it as the Gtk::Window base class.
 {
-  // Do not leave main loop until the destructor is called.
-  m_refApp->hold();
 
   // Connect signals.
+
+  // Clean up.
+  m_refBuilder.reset();		// We're done with the builder.
 }
 
 UIWindow::~UIWindow()
 {
-  // Do not terminate the application immediately because otherwise
-  // the window is not removed from the screen and we get an annoying
-  // pop-up from kwin saying "". g_application_run
-  m_refApp->set_inactivity_timeout(1000);
-  m_refApp->release();
 }
 
 void UIWindow::on_button_clicked(void)

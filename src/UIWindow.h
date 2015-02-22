@@ -25,16 +25,22 @@
 
 #include <gtkmm/window.h>
 #include <gtkmm/application.h>
+#include <gtkmm/builder.h>
 
-class UIWindow : public Gtk::Window
+// Helper class.
+class GladeBuilder
 {
-  private:
-    Glib::RefPtr<Gtk::Application> m_refApp;
+  protected:
+    Glib::RefPtr<Gtk::Builder> m_refBuilder;
+    GladeBuilder(std::string const& glade_path, char const* window_name);
+    Glib::RefPtr<Gtk::Builder> create_from_file(std::string const& glade_path, char const* window_name);
+    GtkWindow* get_window(std::string const& glade_path, char const* window_name);
+};
 
-    static GtkWindow* read_glade(std::string const& glade_path, char const* window_name);
-
+class UIWindow : private GladeBuilder, public Gtk::Window
+{
   public:
-    UIWindow(Glib::RefPtr<Gtk::Application> const& refApp, std::string const& glade_path, char const* window_name);
+    UIWindow(std::string const& glade_path, char const* window_name);
     virtual ~UIWindow();
 
   protected:
