@@ -79,8 +79,6 @@ dnl Libraries.
 PKG_CHECK_MODULES([LIBJACK], [jack])
 PKG_CHECK_MODULES([LIBXML], [libxml++-2.6])
 PKG_CHECK_MODULES([LIBGTKMM], [gtkmm-3.0])
-AC_SUBST(LIBGTKMM_CFLAGS)
-AC_SUBST(LIBGTKMM_LIBS)
 
 dnl Used in sys.h to force recompilation when the compiler version changes.
 CW_PROG_CXX_FINGER_PRINTS
