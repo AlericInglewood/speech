@@ -45,7 +45,9 @@ class UIWindow : private GladeBuilder, public Gtk::Window
 
   protected:
     // Signal handlers.
-    void on_button_clicked(void);
+    void on_button_record_clicked(void);
+    void on_button_play_clicked(void);
+    void on_button_stop_clicked(void);
 };
 
 #endif // UI_WINDOW_H

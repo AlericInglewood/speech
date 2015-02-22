@@ -80,8 +80,21 @@ UIWindow::UIWindow(std::string const& glade_path, char const* window_name) :
   GladeBuilder(glade_path, window_name),				// Initialize the builder in the GladeBuilder base class.
   Gtk::Window(GladeBuilder::get_window(glade_path, window_name)) 	// Get the window from the builder and wrap it as the Gtk::Window base class.
 {
+  Gtk::Button* button_record = NULL;
+  Gtk::Button* button_play = NULL;
+  Gtk::Button* button_stop = NULL;
+
+  m_refBuilder->get_widget("button_record", button_record);
+  m_refBuilder->get_widget("button_play", button_play);
+  m_refBuilder->get_widget("button_stop", button_stop);
 
   // Connect signals.
+  if (button_record)
+    button_record->signal_clicked().connect(sigc::mem_fun(this, &UIWindow::on_button_record_clicked));
+  if (button_play)
+    button_play->signal_clicked().connect(sigc::mem_fun(this, &UIWindow::on_button_play_clicked));
+  if (button_stop)
+    button_stop->signal_clicked().connect(sigc::mem_fun(this, &UIWindow::on_button_stop_clicked));
 
   // Clean up.
   m_refBuilder.reset();		// We're done with the builder.
@@ -91,7 +104,17 @@ UIWindow::~UIWindow()
 {
 }
 
-void UIWindow::on_button_clicked(void)
+void UIWindow::on_button_record_clicked(void)
 {
-  Dout(dc::notice, "Hello World");
+  Dout(dc::notice, "Record");
+}
+
+void UIWindow::on_button_play_clicked(void)
+{
+  Dout(dc::notice, "Play");
+}
+
+void UIWindow::on_button_stop_clicked(void)
+{
+  Dout(dc::notice, "Stop");
 }
