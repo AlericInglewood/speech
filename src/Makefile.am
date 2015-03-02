@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS = cwd utils xml .
+SUBDIRS = cwd utils xml threadsafe .
 
 EXTRA_DIST = ${BUILT_SOURCES}
 
@@ -23,8 +23,8 @@ speech_SOURCES = \
 
 speech_CXXFLAGS = @LIBXML_CFLAGS@ @CXXFLAGS@ @LIBCWD_FLAGS@ @LIBJACK_CFLAGS@ @LIBGTKMM_CFLAGS@
 speech_LDFLAGS = -Wl,--export-dynamic
-speech_LDADD = xml/.libs/libxml.a utils/.libs/libutils.a cwd/.libs/libdebug.a @LIBXML_LIBS@ @LIBS@ @LIBCWD_LIBS@ @LIBJACK_LIBS@ @LIBGTKMM_LIBS@
-speech_DEPENDENCIES = xml/libxml.la utils/libutils.la cwd/libdebug.la
+speech_LDADD = threadsafe/.libs/libthreadsafe.a xml/.libs/libxml.a utils/.libs/libutils.a cwd/.libs/libdebug.a @LIBXML_LIBS@ @LIBS@ @LIBCWD_LIBS@ @LIBJACK_LIBS@ @LIBGTKMM_LIBS@
+speech_DEPENDENCIES = threadsafe/.libs/libthreadsafe.la xml/libxml.la utils/libutils.la cwd/libdebug.la
 
 # --------------- Maintainer's Section
 

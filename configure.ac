@@ -99,6 +99,7 @@ AC_CONFIG_FILES(
         [src/cwd/Makefile]
         [src/utils/Makefile]
         [src/xml/Makefile]
+	[src/threadsafe/Makefile]
         [doc/Makefile]
         [doc/doxygen.config]
         [doc/html.header]
