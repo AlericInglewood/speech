@@ -1,0 +1,3 @@
+[submodule "src/threadsafe"]
+	path = src/threadsafe
+	url = git@github.com:AlericInglewood/ai-threadsafe.git
