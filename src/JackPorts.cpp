@@ -51,7 +51,7 @@ char const* JackPorts::get(unsigned long flags)
   return m_ports[0];
 }
 
-void JackPorts::release(void)
+void JackPorts::release()
 {
   if (m_ports)
   {

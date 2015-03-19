@@ -85,8 +85,8 @@
 //! Debug specific code.
 namespace debug {
 
-void init(void);                // Initialize debugging code, called once from main.
-void init_thread(void);         // Initialize debugging code, called once for each thread.
+void init();                // Initialize debugging code, called once from main.
+void init_thread();         // Initialize debugging code, called once for each thread.
 
 //! @brief Debug Channels (dc) namespace.
 //
@@ -122,9 +122,9 @@ struct InvisibleAllocations {
   //! Destructor.
   ~InvisibleAllocations() { while (M_on > 0) off(); }
   //! Set invisible allocations on. Can be called recursively.
-  void on(void) { libcwd::set_invisible_on(); ++M_on; }
+  void on() { libcwd::set_invisible_on(); ++M_on; }
   //! Cancel one call to on().
-  void off(void) { assert(M_on > 0); --M_on; libcwd::set_invisible_off(); }
+  void off() { assert(M_on > 0); --M_on; libcwd::set_invisible_off(); }
 };
 
 //! @brief Interface for marking scopes with indented debug output.

@@ -41,7 +41,7 @@
 namespace debug {
 
 template<typename T>
-inline char const* type_name_of(void)
+inline char const* type_name_of()
 {
 #if CWDEBUG_LOCATION
   return libcwd::type_info_of<T>().demangled_name();

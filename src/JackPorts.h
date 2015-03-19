@@ -34,7 +34,7 @@ class JackPorts {
     ~JackPorts() { release(); }
 
     char const* get(unsigned long flags);
-    void release(void);
+    void release();
 };
 
 #endif // JACK_PORTS_H

@@ -26,14 +26,14 @@
 
 #include <boost/filesystem/fstream.hpp>
 
-void Persist::read_from_disk(void)
+void Persist::read_from_disk()
 {
   xml::Reader reader;
   reader.parse(m_path, 1);
   xml(reader);
 }
 
-void Persist::write_to_disk(void)
+void Persist::write_to_disk()
 {
   boost::filesystem::ofstream stream;
   stream.open(m_path);

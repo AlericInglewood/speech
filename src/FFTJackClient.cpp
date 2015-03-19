@@ -49,7 +49,7 @@ void FFTJackClient::set_fft_buffer_size(jack_nframes_t nframes)
   Dout(dc::notice, "FFT buffer size: " << m_fft_buffer_size << " samples.");
 }
 
-int FFTJackClient::buffer_size_changed(void)
+int FFTJackClient::buffer_size_changed()
 {
   if (m_fft_buffer_size < m_input_buffer_size)
   {

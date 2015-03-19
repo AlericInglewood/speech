@@ -91,7 +91,7 @@ namespace debug {
      * One time initialization function of rcfile_dc_state.
      * This must be called from debug::init after reading the rcfile.
      */
-    void save_dc_states(void)
+    void save_dc_states()
     {
       // We may only call this function once: it reflects the states as stored
       // in the rcfile and that won't change.  Therefore it is not needed to
@@ -142,7 +142,7 @@ namespace debug {
    * Furthermore it initializes the debug ostream, its mutex and the
    * margin of the default debug object (Dout).
    */
-  void init_thread(void)
+  void init_thread()
   {
     // Turn on all debug channels that are turned on as per rcfile configuration.
     ForAllDebugChannels(
@@ -172,7 +172,7 @@ namespace debug {
    *
    * This function initializes the debug code.
    */
-  void init(void)
+  void init()
   {
 #if CWDEBUG_ALLOC && defined(USE_LIBCW)
     // Tell the memory leak detector which parts of the code are

@@ -37,8 +37,8 @@ class JackClient {
   public:
     JackClient(char const* name);
     virtual ~JackClient();
-    void activate(void);
-    void connect(void);
+    void activate();
+    void connect();
 
   private:
     static void thread_init_cb(void* self);
@@ -50,10 +50,10 @@ class JackClient {
     static void latency_cb(jack_latency_callback_mode_t mode, void* self);
 
   protected:
-    virtual void thread_init(void) { }
-    virtual void shutdown(void) { }
-    virtual int sample_rate_changed(void) { return 0; }
-    virtual int buffer_size_changed(void) { return 0; }
+    virtual void thread_init() { }
+    virtual void shutdown() { }
+    virtual int sample_rate_changed() { return 0; }
+    virtual int buffer_size_changed() { return 0; }
     virtual void port_connect(jack_port_id_t a, jack_port_id_t b, int yn);
     virtual void latency(jack_latency_callback_mode_t mode);
     virtual void calculate_delay(jack_latency_range_t& range) { range.min = range.max = 0; }

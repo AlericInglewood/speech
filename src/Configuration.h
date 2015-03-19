@@ -29,7 +29,7 @@
 class Configuration : public Persist, Singleton<Configuration> {
     friend_Instance;
   private:
-    Configuration(void) : m_changed(false) { }
+    Configuration() : m_changed(false) { }
     ~Configuration() { update(); }
     Configuration(Configuration const&);
 
@@ -40,10 +40,10 @@ class Configuration : public Persist, Singleton<Configuration> {
     void set_path(boost::filesystem::path const& path);
     void set_capture_ports(std::set<std::string> const& capture_ports);
     void set_playback_ports(std::set<std::string> const& playback_ports);
-    void update(void) { if (m_changed) write_to_disk(); }
+    void update() { if (m_changed) write_to_disk(); }
 
-    std::set<std::string> const& get_capture_ports(void) const { return m_capture_ports; }
-    std::set<std::string> const& get_playback_ports(void) const { return m_playback_ports; }
+    std::set<std::string> const& get_capture_ports() const { return m_capture_ports; }
+    std::set<std::string> const& get_playback_ports() const { return m_playback_ports; }
 
   private:
     bool m_changed;

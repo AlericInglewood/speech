@@ -34,7 +34,7 @@ class FFTJackClient : public JackClient {
   protected:
     /*virtual*/ void calculate_delay(jack_latency_range_t& range);
     /*virtual*/ int process(jack_default_audio_sample_t* in, jack_default_audio_sample_t* out, jack_nframes_t nframes);
-    /*virtual*/ int buffer_size_changed(void);
+    /*virtual*/ int buffer_size_changed();
 };
 
 #endif // FFT_JACK_CLIENT_H

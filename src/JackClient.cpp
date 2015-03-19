@@ -120,7 +120,7 @@ JackClient::~JackClient()
   jack_client_close(m_client);
 }
 
-void JackClient::activate(void)
+void JackClient::activate()
 {
   // Tell the JACK server that we are ready to roll.
   int err = jack_activate(m_client);
@@ -131,7 +131,7 @@ void JackClient::activate(void)
 }
 
 // Connect input and output port.
-void JackClient::connect(void)
+void JackClient::connect()
 {
   bool needs_update = false;
   JackPorts ports(m_client);

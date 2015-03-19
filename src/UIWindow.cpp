@@ -104,17 +104,17 @@ UIWindow::~UIWindow()
 {
 }
 
-void UIWindow::on_button_record_clicked(void)
+void UIWindow::on_button_record_clicked()
 {
   Dout(dc::notice, "Record");
 }
 
-void UIWindow::on_button_play_clicked(void)
+void UIWindow::on_button_play_clicked()
 {
   Dout(dc::notice, "Play");
 }
 
-void UIWindow::on_button_stop_clicked(void)
+void UIWindow::on_button_stop_clicked()
 {
   Dout(dc::notice, "Stop");
 }
