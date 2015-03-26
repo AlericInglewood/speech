@@ -47,8 +47,8 @@ class Configuration : public Persist, Singleton<Configuration> {
 
   private:
     bool m_changed;
-    std::set<std::string> m_playback_ports;	//!< Name of the jack playback ports.
-    std::set<std::string> m_capture_ports;	//!< Name of the jack capture ports.
+    std::set<std::string> m_playback_ports;     //!< Name of the jack playback ports.
+    std::set<std::string> m_capture_ports;      //!< Name of the jack capture ports.
 };
 
 #endif // CONFIGURATION_H

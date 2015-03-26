@@ -62,7 +62,7 @@ int main(int argc, char* argv[])
     Singleton<Configuration>::instance().set_path(config_path);
 
     // Find the UI glade file.
-    char const* speech_src = getenv("SRCROOT");	// This works in our special env.source build environment.
+    char const* speech_src = getenv("SRCROOT"); // This works in our special env.source build environment.
     if (!speech_src)
     {
       THROW_ALERT("Environment variable SRCROOT not set. $SRCROOT/res/speechUI.glade must exist.");
@@ -71,12 +71,12 @@ int main(int argc, char* argv[])
     if (!boost::filesystem::exists(glade_path))
     {
       THROW_ALERT("[GLADE_PATH]: No such file or directory. "
-		  "Is your SRCROOT environment variable set correctly?",
-		  AIArgs("[GLADE_PATH]", glade_path));
+                  "Is your SRCROOT environment variable set correctly?",
+                  AIArgs("[GLADE_PATH]", glade_path));
     }
 
     // Create the jack client.
-    FFTJackClient jack_client("Speech");
+    FFTJackClient jack_client("Speech", 10.0);
 
     // Connect the ports. Note: you can't do this before
     // the client is activated, because we can't allow
@@ -87,7 +87,9 @@ int main(int argc, char* argv[])
 
     // Show a GUI.
     Glib::RefPtr<Gtk::Application> refApp = Gtk::Application::create(argc, argv, "com.alinoe.speech");
-    refApp->run(*new UIWindow(glade_path, "window1"));
+    refApp->run(*new UIWindow(glade_path, "window1",
+          std::bind(&FFTJackClient::set_playback_state, &jack_client, std::placeholders::_1),
+          std::bind(&FFTJackClient::set_recording_state, &jack_client, std::placeholders::_1)));
     // Bug workaround for https://bugzilla.gnome.org/show_bug.cgi?id=744876
     // Let the mainloop run until all pending activity is handled.
     while (g_main_context_iteration(NULL, FALSE)) ;

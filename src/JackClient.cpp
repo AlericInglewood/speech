@@ -51,6 +51,8 @@ void JackClient::shutdown_cb(void* self)
 //static
 int JackClient::process_cb(jack_nframes_t nframes, void* self)
 {
+  //DoutEntering(dc::notice, "JackClient::process_cb(" << nframes << ", " << self << ")");
+
   JackClient* client = static_cast<JackClient*>(self);
   jack_default_audio_sample_t* in = (jack_default_audio_sample_t*)jack_port_get_buffer(client->m_input_port, nframes);
   jack_default_audio_sample_t* out = (jack_default_audio_sample_t*)jack_port_get_buffer(client->m_output_port, nframes);
@@ -64,7 +66,7 @@ JackClient::JackClient(char const* name) : m_sample_rate(0), m_input_buffer_size
   if (!m_client)
   {
     THROW_ALERT("Could not open jack client \"[NAME]\". Is the JACK server not running?",
-	AIArgs("[NAME]", name));
+        AIArgs("[NAME]", name));
   }
 
   // Tell JACK to call thread_init_cb once just after the creation of the thread in which all
@@ -74,7 +76,7 @@ JackClient::JackClient(char const* name) : m_sample_rate(0), m_input_buffer_size
   // Tell the Jack server to call sample_rate_cb whenever the system sample rate changes.
   jack_set_sample_rate_callback(m_client, &JackClient::sample_rate_cb, this);
 
-  // Tell JACK to call buffer_size_cb whenever the size of the the buffer that will be
+  // Tell JACK to call buffer_size_cb whenever the size of the input buffer that will be
   // passed to the process_callback is about to change.
   jack_set_buffer_size_callback(m_client, &JackClient::buffer_size_cb, this);
 
@@ -112,7 +114,16 @@ int JackClient::buffer_size_cb(jack_nframes_t buffer_size, void* self)
   JackClient* client = static_cast<JackClient*>(self);
   client->m_input_buffer_size = buffer_size;
   Dout(dc::notice, "Input buffer size: " << buffer_size << " samples.");
-  return client->buffer_size_changed();
+  try
+  {
+    client->buffer_size_changed();
+  }
+  catch(std::exception const&)
+  {
+    // Failure.
+    return 1;
+  }
+  return 0;
 }
 
 JackClient::~JackClient()
@@ -122,6 +133,9 @@ JackClient::~JackClient()
 
 void JackClient::activate()
 {
+  // Call buffer_size_cb because it isn't called upon activation.
+  buffer_size_cb(jack_get_buffer_size(m_client), this);
+
   // Tell the JACK server that we are ready to roll.
   int err = jack_activate(m_client);
   if (err)
@@ -146,9 +160,9 @@ void JackClient::connect()
     {
       other_port_names.insert(ports.get(JackPortIsPhysical | (connect_output ? JackPortIsInput : JackPortIsOutput)));
       if (connect_output)
-	Singleton<Configuration>::instance().set_playback_ports(other_port_names);
+        Singleton<Configuration>::instance().set_playback_ports(other_port_names);
       else
-	Singleton<Configuration>::instance().set_capture_ports(other_port_names);
+        Singleton<Configuration>::instance().set_capture_ports(other_port_names);
       needs_update = true;
     }
     std::string our_port = jack_port_name(connect_output ? m_output_port : m_input_port);
@@ -162,12 +176,12 @@ void JackClient::connect()
       int err = jack_connect(m_client, source_port_name.c_str(), target_port_name.c_str());
       if (err == EEXIST)
       {
-	std::cout << "Ports " << source_port_name << " and " << target_port_name << " are already connected!" << std::endl;
+        std::cout << "Ports " << source_port_name << " and " << target_port_name << " are already connected!" << std::endl;
       }
       else if (err)
       {
-	THROW_ALERTC(err, "jack_connect: Cannot connect port \"[PORT1]\" to \"[PORT2]\"",
-	    AIArgs("[PORT1]", source_port_name)("[PORT2]", target_port_name));
+        THROW_ALERTC(err, "jack_connect: Cannot connect port \"[PORT1]\" to \"[PORT2]\"",
+            AIArgs("[PORT1]", source_port_name)("[PORT2]", target_port_name));
       }
     }
   }
@@ -239,7 +253,7 @@ void JackClient::latency(jack_latency_callback_mode_t mode)
   if (connected_ports)
   {
     char const** ptr = connected_ports;
-    assert(*ptr);	// Otherwise start with the while and don't call jack_port_set_latency_range when range is still 1000000, 0.
+    assert(*ptr);       // Otherwise start with the while and don't call jack_port_set_latency_range when range is still 1000000, 0.
     do
     {
       jack_port_t* port = jack_port_by_name(m_client, *ptr);
@@ -261,8 +275,8 @@ void JackClient::latency(jack_latency_callback_mode_t mode)
       range.max += delay.max;
     }
     Dout(dc::notice, "Calling jack_port_set_latency_range(" <<
-	 ((mode == JackPlaybackLatency) ? "m_input_port, JackPlaybackLatency" : "m_output_port, JackCaptureLatency") <<
-	 ", {" << range.min << ", " << range.max << "})");
+         ((mode == JackPlaybackLatency) ? "m_input_port, JackPlaybackLatency" : "m_output_port, JackCaptureLatency") <<
+         ", {" << range.min << ", " << range.max << "})");
     jack_port_set_latency_range(our_port, mode, &range);
   }
 }

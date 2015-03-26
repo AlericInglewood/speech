@@ -15,6 +15,7 @@ CXXFLAGS =
 speech_SOURCES = \
 	Persist.cpp \
 	Configuration.cpp \
+	JackFIFOBuffer.cpp \
 	FFTJackClient.cpp \
 	JackClient.cpp \
 	JackPorts.cpp \

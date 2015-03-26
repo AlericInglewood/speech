@@ -23,6 +23,7 @@
 #include "UIWindow.h"
 #include "utils/AIAlert.h"
 #include "debug.h"
+#include "FFTJackClientStates.h"
 
 #include <gtkmm.h>
 
@@ -42,17 +43,17 @@ Glib::RefPtr<Gtk::Builder> GladeBuilder::create_from_file(std::string const& gla
   catch(Glib::FileError const& ex)
   {
     THROW_ALERT("While reading [GLADE_PATH], a Glib::FileError exception was thrown: [WHAT].",
-	AIArgs("[GLADE_PATH]", glade_path)("[WHAT]", ex.what()));
+        AIArgs("[GLADE_PATH]", glade_path)("[WHAT]", ex.what()));
   }
   catch(Glib::MarkupError const& ex)
   {
     THROW_ALERT("While reading [GLADE_PATH], a Glib::MarkupError exception was thrown: [WHAT].",
-	AIArgs("[GLADE_PATH]", glade_path)("[WHAT]", ex.what()));
+        AIArgs("[GLADE_PATH]", glade_path)("[WHAT]", ex.what()));
   }
   catch(Gtk::BuilderError const& ex)
   {
     THROW_ALERT("While reading [GLADE_PATH], a Glib::BuilderError exception was thrown: [WHAT].",
-	AIArgs("[GLADE_PATH]", glade_path)("[WHAT]", ex.what()));
+        AIArgs("[GLADE_PATH]", glade_path)("[WHAT]", ex.what()));
   }
   return refBuilder;
 }
@@ -71,19 +72,22 @@ GtkWindow* GladeBuilder::get_window(std::string const& glade_path, char const* w
   if (!window)
   {
     THROW_ALERT("While reading [GLADE_PATH], could not find object '[WINDOW_NAME]'.",
-	AIArgs("[GLADE_PATH]", glade_path)("[WINDOW_NAME]", window_name));
+        AIArgs("[GLADE_PATH]", glade_path)("[WINDOW_NAME]", window_name));
   }
   return window;
 }
 
-UIWindow::UIWindow(std::string const& glade_path, char const* window_name) :
-  GladeBuilder(glade_path, window_name),				// Initialize the builder in the GladeBuilder base class.
-  Gtk::Window(GladeBuilder::get_window(glade_path, window_name)) 	// Get the window from the builder and wrap it as the Gtk::Window base class.
+UIWindow::UIWindow(std::string const& glade_path, char const* window_name, set_state_cb_type const& set_playback_state_cb, set_state_cb_type const& set_record_state_cb) :
+  GladeBuilder(glade_path, window_name),                                // Initialize the builder in the GladeBuilder base class.
+  Gtk::Window(GladeBuilder::get_window(glade_path, window_name)),       // Get the window from the builder and wrap it as the Gtk::Window base class.
+  m_set_playback_state_cb(set_playback_state_cb),
+  m_set_record_state_cb(set_record_state_cb)
 {
   Gtk::Button* button_record = NULL;
   Gtk::Button* button_play = NULL;
   Gtk::Button* button_stop = NULL;
 
+  // Set up buttons.
   m_refBuilder->get_widget("button_record", button_record);
   m_refBuilder->get_widget("button_play", button_play);
   m_refBuilder->get_widget("button_stop", button_stop);
@@ -97,24 +101,27 @@ UIWindow::UIWindow(std::string const& glade_path, char const* window_name) :
     button_stop->signal_clicked().connect(sigc::mem_fun(this, &UIWindow::on_button_stop_clicked));
 
   // Clean up.
-  m_refBuilder.reset();		// We're done with the builder.
+  m_refBuilder.reset();         // We're done with the builder.
 }
 
 UIWindow::~UIWindow()
 {
 }
 
+using namespace FFTJackClientStates;
+
 void UIWindow::on_button_record_clicked()
 {
-  Dout(dc::notice, "Record");
+  m_set_record_state_cb(record_input);
 }
 
 void UIWindow::on_button_play_clicked()
 {
-  Dout(dc::notice, "Play");
+  m_set_playback_state_cb(playback_to_output);
 }
 
 void UIWindow::on_button_stop_clicked()
 {
-  Dout(dc::notice, "Stop");
+  m_set_record_state_cb(none);
+  m_set_playback_state_cb(passthrough);
 }

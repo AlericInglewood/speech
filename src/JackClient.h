@@ -53,7 +53,7 @@ class JackClient {
     virtual void thread_init() { }
     virtual void shutdown() { }
     virtual int sample_rate_changed() { return 0; }
-    virtual int buffer_size_changed() { return 0; }
+    virtual void buffer_size_changed() { }
     virtual void port_connect(jack_port_id_t a, jack_port_id_t b, int yn);
     virtual void latency(jack_latency_callback_mode_t mode);
     virtual void calculate_delay(jack_latency_range_t& range) { range.min = range.max = 0; }

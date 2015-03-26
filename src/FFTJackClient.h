@@ -22,19 +22,45 @@
 #define FFT_JACK_CLIENT_H
 
 #include "JackClient.h"
+#include "FFTJackClientStates.h"
+#include "JackFIFOBuffer.h"
 
-class FFTJackClient : public JackClient {
+#include <atomic>
+#include <cassert>
+#include <memory>
+
+class FFTJackClient : public JackClient
+{
   protected:
     jack_nframes_t m_fft_buffer_size;
+    std::atomic<int> m_state;
+    int m_playback_state;
+    std::unique_ptr<jack_default_audio_sample_t[]> m_silence_buffer;
+    std::unique_ptr<jack_default_audio_sample_t[]> m_test_buffer;
+    JackFIFOBuffer m_recording_buffer;
+
+    // Helper variables used during muting.
+    jack_nframes_t m_crossfade_frame;
+    jack_nframes_t m_crossfade_nframes;
+    float m_crossfade_frame_normalization;
 
   public:
-    FFTJackClient(char const* name);
+    FFTJackClient(char const* name, double period);
+    virtual ~FFTJackClient() { }
+
     void set_fft_buffer_size(jack_nframes_t nframes);
+    void set_recording_state(int record_state);
+    void set_playback_state(int playback_state);
+    int get_state() const { return m_state.load(std::memory_order_relaxed); }
 
   protected:
     /*virtual*/ void calculate_delay(jack_latency_range_t& range);
     /*virtual*/ int process(jack_default_audio_sample_t* in, jack_default_audio_sample_t* out, jack_nframes_t nframes);
-    /*virtual*/ int buffer_size_changed();
+    /*virtual*/ void buffer_size_changed();
+
+  private:
+    FFTJackClient(FFTJackClient const&);
+    FFTJackClient(FFTJackClient&&);
 };
 
 #endif // FFT_JACK_CLIENT_H

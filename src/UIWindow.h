@@ -21,7 +21,10 @@
 #ifndef UI_WINDOW_H
 #define UI_WINDOW_H
 
+#include "FFTJackClientStates.h"
+
 #include <string>
+#include <functional>
 
 #include <gtkmm/window.h>
 #include <gtkmm/application.h>
@@ -39,8 +42,10 @@ class GladeBuilder
 
 class UIWindow : private GladeBuilder, public Gtk::Window
 {
+    typedef std::function<void(int)> set_state_cb_type;
+
   public:
-    UIWindow(std::string const& glade_path, char const* window_name);
+    UIWindow(std::string const& glade_path, char const* window_name, set_state_cb_type const& set_playback_state_cb, set_state_cb_type const& set_record_state_cb);
     virtual ~UIWindow();
 
   protected:
@@ -48,6 +53,10 @@ class UIWindow : private GladeBuilder, public Gtk::Window
     void on_button_record_clicked();
     void on_button_play_clicked();
     void on_button_stop_clicked();
+
+  private:
+    set_state_cb_type m_set_playback_state_cb;
+    set_state_cb_type m_set_record_state_cb;
 };
 
 #endif // UI_WINDOW_H
