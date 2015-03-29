@@ -128,11 +128,14 @@ int JackClient::buffer_size_cb(jack_nframes_t buffer_size, void* self)
 
 JackClient::~JackClient()
 {
+  Dout(dc::notice, "Calling ~JackClient()");
   jack_client_close(m_client);
 }
 
 void JackClient::activate()
 {
+  DoutEntering(dc::notice, "JackClient::activate()");
+
   // Call buffer_size_cb because it isn't called upon activation.
   buffer_size_cb(jack_get_buffer_size(m_client), this);
 
@@ -279,4 +282,10 @@ void JackClient::latency(jack_latency_callback_mode_t mode)
          ", {" << range.min << ", " << range.max << "})");
     jack_port_set_latency_range(our_port, mode, &range);
   }
+}
+
+// This might get called while the derived class is being destructed: do nothing.
+int JackClient::process(jack_default_audio_sample_t*, jack_default_audio_sample_t*, jack_nframes_t)
+{
+  return 0;
 }

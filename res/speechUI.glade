@@ -64,12 +64,16 @@
                         <child>
                           <object class="GtkToggleButton" id="button_record">
                             <property name="label">gtk-media-record</property>
+                            <property name="name">record_button</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
                             <property name="tooltip_text" translatable="yes">Start a new recording (erases previous recording).</property>
                             <property name="use_stock">True</property>
                             <property name="always_show_image">True</property>
+                            <style>
+                              <class name="recording_device_button"/>
+                            </style>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -170,12 +174,16 @@
                         <child>
                           <object class="GtkButton" id="button_stop">
                             <property name="label">gtk-media-stop</property>
+                            <property name="name">stop_button</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
                             <property name="tooltip_text" translatable="yes">Stop playback and/or recording. Fall back to the mode given below.</property>
                             <property name="use_stock">True</property>
                             <property name="always_show_image">True</property>
+                            <style>
+                              <class name="recording_device_button"/>
+                            </style>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -226,7 +234,6 @@
                                         <property name="receives_default">False</property>
                                         <property name="tooltip_text" translatable="yes">Write the output of the test device to the application output jack.</property>
                                         <property name="xalign">0</property>
-                                        <property name="active">True</property>
                                         <property name="draw_indicator">True</property>
                                         <property name="group">passthrough</property>
                                       </object>
@@ -244,7 +251,6 @@
                                         <property name="receives_default">False</property>
                                         <property name="tooltip_text" translatable="yes">Output silence on the application output jack.</property>
                                         <property name="xalign">0</property>
-                                        <property name="active">True</property>
                                         <property name="draw_indicator">True</property>
                                         <property name="group">passthrough</property>
                                       </object>
@@ -298,12 +304,17 @@
                         <child>
                           <object class="GtkToggleButton" id="button_play">
                             <property name="label">gtk-media-play</property>
+                            <property name="use_action_appearance">True</property>
+                            <property name="name">play_button</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
                             <property name="tooltip_text" translatable="yes">(Re)start playing from the beginning of the recording buffer.</property>
                             <property name="use_stock">True</property>
                             <property name="always_show_image">True</property>
+                            <style>
+                              <class name="recording_device_button"/>
+                            </style>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -326,12 +337,6 @@
                             <property name="fill">True</property>
                             <property name="position">1</property>
                           </packing>
-                        </child>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <child>
-                          <placeholder/>
                         </child>
                       </object>
                       <packing>

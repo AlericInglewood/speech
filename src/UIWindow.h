@@ -45,7 +45,8 @@ class UIWindow : private GladeBuilder, public Gtk::Window
     typedef std::function<void(int)> set_state_cb_type;
 
   public:
-    UIWindow(std::string const& glade_path, char const* window_name, set_state_cb_type const& set_playback_state_cb, set_state_cb_type const& set_record_state_cb);
+    UIWindow(std::string const& glade_path, std::string const& css_path, char const* window_name,
+             set_state_cb_type const& set_playback_state_cb, set_state_cb_type const& set_record_state_cb);
     virtual ~UIWindow();
 
   protected:

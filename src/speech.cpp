@@ -74,6 +74,12 @@ int main(int argc, char* argv[])
                   "Is your SRCROOT environment variable set correctly?",
                   AIArgs("[GLADE_PATH]", glade_path));
     }
+    std::string css_path = std::string(speech_src) + "/res/speechUI.css";
+    if (!boost::filesystem::exists(css_path))
+    {
+      THROW_ALERT("[CSS_PATH]: No such file or directory.",
+                  AIArgs("[CSS_PATH]", css_path));
+    }
 
     // Create the jack client.
     FFTJackClient jack_client("Speech", 10.0);
@@ -87,7 +93,7 @@ int main(int argc, char* argv[])
 
     // Show a GUI.
     Glib::RefPtr<Gtk::Application> refApp = Gtk::Application::create(argc, argv, "com.alinoe.speech");
-    refApp->run(*new UIWindow(glade_path, "window1",
+    refApp->run(*new UIWindow(glade_path, css_path, "window1",
           std::bind(&FFTJackClient::set_playback_state, &jack_client, std::placeholders::_1),
           std::bind(&FFTJackClient::set_recording_state, &jack_client, std::placeholders::_1)));
     // Bug workaround for https://bugzilla.gnome.org/show_bug.cgi?id=744876

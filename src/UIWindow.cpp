@@ -77,7 +77,8 @@ GtkWindow* GladeBuilder::get_window(std::string const& glade_path, char const* w
   return window;
 }
 
-UIWindow::UIWindow(std::string const& glade_path, char const* window_name, set_state_cb_type const& set_playback_state_cb, set_state_cb_type const& set_record_state_cb) :
+UIWindow::UIWindow(std::string const& glade_path, std::string const& css_path, char const* window_name,
+                   set_state_cb_type const& set_playback_state_cb, set_state_cb_type const& set_record_state_cb) :
   GladeBuilder(glade_path, window_name),                                // Initialize the builder in the GladeBuilder base class.
   Gtk::Window(GladeBuilder::get_window(glade_path, window_name)),       // Get the window from the builder and wrap it as the Gtk::Window base class.
   m_set_playback_state_cb(set_playback_state_cb),
@@ -91,6 +92,21 @@ UIWindow::UIWindow(std::string const& glade_path, char const* window_name, set_s
   m_refBuilder->get_widget("button_record", button_record);
   m_refBuilder->get_widget("button_play", button_play);
   m_refBuilder->get_widget("button_stop", button_stop);
+
+  // Load our css.
+  Glib::RefPtr<Gtk::CssProvider> refProvider = Gtk::CssProvider::create();
+  try
+  {
+    refProvider->load_from_path(css_path);
+  }
+  catch(Glib::Error const& error)
+  {
+    THROW_ALERT("While reading [CSS_PATH] a Glib::Error exception occurred: \"[WHAT]\".",
+        AIArgs("[CSS_PATH]", css_path)("[WHAT]", error.what()));
+  }
+  Gtk::Window* window = NULL;
+  m_refBuilder->get_widget("window1", window);
+  window->get_style_context()->add_provider_for_screen(Gdk::Screen::get_default(), refProvider, GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 
   // Connect signals.
   if (button_record)

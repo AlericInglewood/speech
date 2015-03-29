@@ -58,7 +58,7 @@ class JackClient {
     virtual void latency(jack_latency_callback_mode_t mode);
     virtual void calculate_delay(jack_latency_range_t& range) { range.min = range.max = 0; }
 
-    virtual int process(jack_default_audio_sample_t* in, jack_default_audio_sample_t* out, jack_nframes_t nframes) = 0;
+    virtual int process(jack_default_audio_sample_t* in, jack_default_audio_sample_t* out, jack_nframes_t nframes);
 };
 
 #endif // JACK_CLIENT_H
