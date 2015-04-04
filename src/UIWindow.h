@@ -21,14 +21,17 @@
 #ifndef UI_WINDOW_H
 #define UI_WINDOW_H
 
-#include "FFTJackClientStates.h"
-
 #include <string>
 #include <functional>
 
 #include <gtkmm/window.h>
 #include <gtkmm/application.h>
 #include <gtkmm/builder.h>
+#include <gtkmm/radiobutton.h>
+#include <glibmm/dispatcher.h>
+
+// Forward declaration.
+class RecordingDeviceState;
 
 // Helper class.
 class GladeBuilder
@@ -38,26 +41,49 @@ class GladeBuilder
     GladeBuilder(std::string const& glade_path, char const* window_name);
     Glib::RefPtr<Gtk::Builder> create_from_file(std::string const& glade_path, char const* window_name);
     GtkWindow* get_window(std::string const& glade_path, char const* window_name);
+    template<typename T> void get_widget(char const* name, T& widget);
 };
 
 class UIWindow : private GladeBuilder, public Gtk::Window
 {
-    typedef std::function<void(int)> set_state_cb_type;
-
   public:
-    UIWindow(std::string const& glade_path, std::string const& css_path, char const* window_name,
-             set_state_cb_type const& set_playback_state_cb, set_state_cb_type const& set_record_state_cb);
+    UIWindow(std::string const& glade_path, std::string const& css_path, char const* window_name, RecordingDeviceState& state);
     virtual ~UIWindow();
+
+  private:
+    void stop_playback_if_any();
+    void stop_recording_if_any();
 
   protected:
     // Signal handlers.
     void on_button_record_clicked();
     void on_button_play_clicked();
     void on_button_stop_clicked();
+    void on_repeat_toggled();
+    void on_playback_to_input_toggled();
+    void on_record_radio_toggled(int state);
+    void on_stop_radio_toggled(int state);
+    void on_wakeup();
 
   private:
-    set_state_cb_type m_set_playback_state_cb;
-    set_state_cb_type m_set_record_state_cb;
+    Gtk::ToggleButton* m_button_record;
+    Gtk::ToggleButton* m_button_play;
+    Gtk::Button* m_button_stop;
+    Gtk::CheckButton* m_checkbox_repeat;
+    Gtk::CheckButton* m_checkbox_playback_to_input;
+    Gtk::RadioButton* m_radio_input;
+    Gtk::RadioButton* m_radio_test_source;
+    Gtk::RadioButton* m_radio_passthrough;
+    Gtk::RadioButton* m_radio_test_output;
+    Gtk::RadioButton* m_radio_mute;
+
+    RecordingDeviceState& m_state;
+    Glib::Dispatcher m_state_changed;
+
+    int m_internal_set_active;
+    int m_record_radio_buttons_state;
+    int m_stop_radio_buttons_state;
+    int m_play_check_buttons_state;
 };
 
 #endif // UI_WINDOW_H

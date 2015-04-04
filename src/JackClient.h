@@ -38,7 +38,7 @@ class JackClient {
     JackClient(char const* name);
     virtual ~JackClient();
     void activate();
-    void connect();
+    void connect_ports();
 
   private:
     static void thread_init_cb(void* self);

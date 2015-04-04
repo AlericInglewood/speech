@@ -16,6 +16,7 @@ speech_SOURCES = \
 	Persist.cpp \
 	Configuration.cpp \
 	JackFIFOBuffer.cpp \
+        RecordingDeviceState.cpp \
 	FFTJackClient.cpp \
 	JackClient.cpp \
 	JackPorts.cpp \

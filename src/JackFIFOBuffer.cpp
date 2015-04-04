@@ -25,20 +25,28 @@
 #include "JackFIFOBuffer.h"
 #include "debug.h"
 
-JackFIFOBuffer::JackFIFOBuffer(jack_client_t* client, double period)
+void JackFIFOBuffer::reallocate_buffer(int nchunks, jack_nframes_t nframes)
+{
+  m_nframes = nframes;
+  m_capacity = nframes * nchunks;
+  // The following is safe because the buffer isn't used at the moment.
+  delete m_buffer;
+  m_buffer = new jack_default_audio_sample_t[m_capacity];
+  Dout(dc::notice, "Allocated buffer at " << m_buffer << " till " << &m_buffer[m_capacity]);
+  m_head = m_buffer;
+  clear();
+}
+
+JackFIFOBuffer::JackFIFOBuffer(jack_client_t* client, double period) : m_buffer(NULL)
 {
   DoutEntering(dc::notice, "JackFIFOBuffer::JackFIFOBuffer(" << client << ", " << period << ")");
   jack_nframes_t sample_rate = jack_get_sample_rate(client);
   Dout(dc::notice, "sample_rate = " << sample_rate);
-  m_nframes = jack_get_buffer_size(client);
-  Dout(dc::notice, "nframes = " << m_nframes);
-  intptr_t required_samples = std::round(period * sample_rate);
-  m_capacity = ((required_samples + m_nframes / 2) / m_nframes + 1) * m_nframes;
-  Dout(dc::notice, "m_capacity = " << m_capacity);
-  m_buffer = new jack_default_audio_sample_t[m_capacity];
-  Dout(dc::notice, "Allocated buffer at " << m_buffer << " till " << &m_buffer[m_capacity]);
-  m_head = m_buffer;
-  m_tail = m_buffer;
+  jack_nframes_t nframes = jack_get_buffer_size(client);
+  Dout(dc::notice, "nframes = " << nframes);
+  intptr_t const required_samples = std::round(period * sample_rate);
+  int const nchunks = (required_samples + nframes / 2) / nframes + 1;
+  reallocate_buffer(nchunks, nframes);
 }
 
 void JackFIFOBuffer::buffer_size_changed(jack_nframes_t nframes)
@@ -46,11 +54,6 @@ void JackFIFOBuffer::buffer_size_changed(jack_nframes_t nframes)
   DoutEntering(dc::notice, "JackFIFOBuffer::buffer_size_changed(" << nframes << ")");
   if (nframes == m_nframes)
     return;     // No change.
-  int nr_buffers = m_capacity / m_nframes;
-  m_nframes = nframes;
-  m_capacity = nframes * nr_buffers;
-  delete m_buffer;
-  m_buffer = new jack_default_audio_sample_t[m_capacity];
-  Dout(dc::notice, "Allocated buffer at " << m_buffer << " till " << &m_buffer[m_capacity]);
-  clear();
+  int const nchunks = m_capacity / m_nframes;   // Calculate nchunks from the previous number of frames.
+  reallocate_buffer(nchunks, nframes);
 }

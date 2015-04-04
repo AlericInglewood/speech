@@ -32,17 +32,19 @@ class JackFIFOBuffer {
     intptr_t m_capacity;                                        //!< Total size of m_buffer in jack_default_audio_sample_t's (nframes * nchunks).
     jack_default_audio_sample_t* m_buffer;              //!< Buffer start.
     std::atomic<jack_default_audio_sample_t*> m_head;   //!< Write position in circular buffer.
+    jack_default_audio_sample_t* m_readptr;             //!< Non-destructive read position in circular buffer.
     std::atomic<jack_default_audio_sample_t*> m_tail;   //!< Read position in circular buffer.
 
   private:
     jack_default_audio_sample_t* increment(jack_default_audio_sample_t* ptr) const { return ((ptr - m_buffer + m_nframes) % m_capacity) + m_buffer; }
+    void reallocate_buffer(int nchunks, jack_nframes_t nframes);
 
   public:
     //! Construct a buffer for \a client with a duration of \a period seconds.
     JackFIFOBuffer(jack_client_t* client, double period);
 
     //! Construct a buffer of \a nchunks chunks, each of \a nframes frames.
-    JackFIFOBuffer(jack_nframes_t nframes, int nchunks) : m_nframes(nframes), m_capacity(nframes * (nchunks + 1)), m_buffer(new jack_default_audio_sample_t[m_capacity]), m_head(m_buffer), m_tail(m_buffer) { }
+    JackFIFOBuffer(int nchunks, jack_nframes_t nframes) : m_buffer(NULL) { reallocate_buffer(nchunks + 1, nframes); }
 
     //! Destructor.
     virtual ~JackFIFOBuffer() { delete [] m_buffer; }
@@ -71,15 +73,35 @@ class JackFIFOBuffer {
     //-------------------------------------------------------------------------
     // Consumer thread.
 
-    //! Return m_tail and advance it. Returns NULL if the buffer is empty.
+    //! Return m_tail and advance it, possibly also advancing m_readptr. Returns NULL if the buffer is empty.
     jack_default_audio_sample_t* pop()
     {
       auto const current_tail = m_tail.load(std::memory_order_relaxed);
       if (current_tail == m_head.load(std::memory_order_acquire))
         return NULL; // Empty queue.
 
-      m_tail.store(increment(current_tail), std::memory_order_release);
+      auto const next_tail = increment(current_tail);
+      if (current_tail == m_readptr)
+        m_readptr = next_tail;
+      m_tail.store(next_tail, std::memory_order_release);
       return current_tail;
+    }
+
+    //! Return m_readptr and advance it. Returns NULL if the read pointer is at the end of the buffer.
+    jack_default_audio_sample_t* read()
+    {
+      auto current_ptr = m_readptr;
+      if (current_ptr == m_head.load(std::memory_order_acquire))
+        return NULL; // At end.
+
+      m_readptr = increment(current_ptr);
+      return current_ptr;
+    }
+
+    //! Reset the read pointer to the beginning of the recorded data in the buffer.
+    void reset_readptr()
+    {
+      m_readptr = m_tail.load(std::memory_order_relaxed);
     }
 
     //! Clear the buffer.
@@ -90,14 +112,15 @@ class JackFIFOBuffer {
     void clear()
     {
       auto const current_head = m_head.load(std::memory_order_relaxed);
+      m_readptr = current_head;
       m_tail.store(current_head, std::memory_order_release);
     }
 
     //-------------------------------------------------------------------------
 
-    // Return value    :  true                          false
-    // Producer thread :  Is empty.                             Is, or was recently, non-empty.
-    // Consumer thread :  Is, or was recently, empty.   Is non-empty.
+    // Return value    :  true                                false
+    // Producer thread :  Is empty/at_end.                    Is, or was recently, non-empty.
+    // Consumer thread :  Is, or was recently, empty/at_end.  Is non-empty.
     // Other threads   :             meaningless (don't call this)
     bool empty() const
     {
@@ -105,9 +128,19 @@ class JackFIFOBuffer {
       return current_head == m_tail.load(std::memory_order_relaxed);
     }
 
-    // Return value    :  true                          false
-    // Producer thread :  Is, or was recently, full.    Is not full.
-    // Consumer thread :  Is full.                              Is, or was recently, not full.
+    // Return value    :  true                                false
+    // Producer thread :  Is at end.                          Is, or was recently, not at end.
+    // Consumer thread :  Is, or was recently, at end.        Is not at end.
+    // Other threads   :             meaningless (don't call this)
+    bool at_end() const
+    {
+      auto const current_head = m_head.load(std::memory_order_relaxed);
+      return current_head == m_readptr;
+    }
+
+    // Return value    :  true                                false
+    // Producer thread :  Is, or was recently, full.          Is not full.
+    // Consumer thread :  Is full.                            Is, or was recently, not full.
     // Other threads   :             meaningless (don't call this)
     bool full() const
     {

@@ -2,13 +2,13 @@
   border-image: none;
   border-radius: 6px;
   border-width: 2px;
-  border-style: outset;         /* For a 3D effect; switched to inset in .recording_device_button:active */
+  border-style: outset;         /* For a 3D effect; switched to inset in .recording_device_button:checked */
   background-color: lightgray;  /* Anything to override whatever is set in the parent.
                                    This is necessary when setting background-image to none
                                    in .recording_device_button:hover. */
   background-image: -gtk-gradient (linear, 0 0, 0.3 1, color-stop (0.1, #e0e0e0), color-stop (0.5, #eeeeee));
   /*font-size: 10pt;*/
-  /*color: #00008B;*/
+  color: black;
 }
 
 .recording_device_button:hover {
@@ -17,7 +17,8 @@
   background-color: #eeeeee;
 }
 
-.recording_device_button:active {
+.recording_device_button:active,
+.recording_device_button:checked {
   transition: 0ms;
   border-style: inset;          /* For a 3D effect; button now appears to be pressed. */
   /* I'd prefer to use darker(@bg_color, 0.93) and @bg_color instead of #d0d0d0 and #eeeeee, but @bg_color doesn't work! */

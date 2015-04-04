@@ -148,7 +148,7 @@ void JackClient::activate()
 }
 
 // Connect input and output port.
-void JackClient::connect()
+void JackClient::connect_ports()
 {
   bool needs_update = false;
   JackPorts ports(m_client);

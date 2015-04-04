@@ -23,7 +23,8 @@
 #include "UIWindow.h"
 #include "utils/AIAlert.h"
 #include "debug.h"
-#include "FFTJackClientStates.h"
+#include "utils/at_scope_end.h"
+#include "RecordingDeviceState.h"
 
 #include <gtkmm.h>
 
@@ -74,24 +75,51 @@ GtkWindow* GladeBuilder::get_window(std::string const& glade_path, char const* w
     THROW_ALERT("While reading [GLADE_PATH], could not find object '[WINDOW_NAME]'.",
         AIArgs("[GLADE_PATH]", glade_path)("[WINDOW_NAME]", window_name));
   }
+
   return window;
 }
 
-UIWindow::UIWindow(std::string const& glade_path, std::string const& css_path, char const* window_name,
-                   set_state_cb_type const& set_playback_state_cb, set_state_cb_type const& set_record_state_cb) :
+template<typename T>
+void GladeBuilder::get_widget(char const* name, T& widget)
+{
+  widget = NULL;
+  m_refBuilder->get_widget(name, widget);
+  if (!widget)
+  {
+    THROW_ALERT("Failed to find widget \"[NAME]\"!", AIArgs("[NAME]", name));
+  }
+}
+
+UIWindow::UIWindow(std::string const& glade_path, std::string const& css_path, char const* window_name, RecordingDeviceState& state) :
   GladeBuilder(glade_path, window_name),                                // Initialize the builder in the GladeBuilder base class.
   Gtk::Window(GladeBuilder::get_window(glade_path, window_name)),       // Get the window from the builder and wrap it as the Gtk::Window base class.
-  m_set_playback_state_cb(set_playback_state_cb),
-  m_set_record_state_cb(set_record_state_cb)
+  m_state(state),
+  m_internal_set_active(false),
+  m_record_radio_buttons_state(RecordingDeviceState::record_input),
+  m_stop_radio_buttons_state(RecordingDeviceState::passthrough),
+  m_play_check_buttons_state(0)
 {
-  Gtk::Button* button_record = NULL;
-  Gtk::Button* button_play = NULL;
-  Gtk::Button* button_stop = NULL;
+  Gtk::Window* window;
 
-  // Set up buttons.
-  m_refBuilder->get_widget("button_record", button_record);
-  m_refBuilder->get_widget("button_play", button_play);
-  m_refBuilder->get_widget("button_stop", button_stop);
+  try
+  {
+    // Get all the widgets that we need.
+    get_widget(window_name, window);
+    get_widget("button_record", m_button_record);
+    get_widget("button_play", m_button_play);
+    get_widget("button_stop", m_button_stop);
+    get_widget("repeat", m_checkbox_repeat);
+    get_widget("playback_to_input", m_checkbox_playback_to_input);
+    get_widget("input", m_radio_input);
+    get_widget("test source", m_radio_test_source);
+    get_widget("passthrough", m_radio_passthrough);
+    get_widget("test output", m_radio_test_output);
+    get_widget("mute", m_radio_mute);
+  }
+  catch(AIAlert::Error const& error)
+  {
+    THROW_ALERT("While reading [GLADE_PATH]", AIArgs("[GLADE_PATH]", glade_path), error);
+  }
 
   // Load our css.
   Glib::RefPtr<Gtk::CssProvider> refProvider = Gtk::CssProvider::create();
@@ -101,43 +129,180 @@ UIWindow::UIWindow(std::string const& glade_path, std::string const& css_path, c
   }
   catch(Glib::Error const& error)
   {
-    THROW_ALERT("While reading [CSS_PATH] a Glib::Error exception occurred: \"[WHAT]\".",
+    THROW_ALERT("While parsing [CSS_PATH] a Glib::Error exception occurred: \"[WHAT]\".",
         AIArgs("[CSS_PATH]", css_path)("[WHAT]", error.what()));
   }
-  Gtk::Window* window = NULL;
-  m_refBuilder->get_widget("window1", window);
   window->get_style_context()->add_provider_for_screen(Gdk::Screen::get_default(), refProvider, GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-
-  // Connect signals.
-  if (button_record)
-    button_record->signal_clicked().connect(sigc::mem_fun(this, &UIWindow::on_button_record_clicked));
-  if (button_play)
-    button_play->signal_clicked().connect(sigc::mem_fun(this, &UIWindow::on_button_play_clicked));
-  if (button_stop)
-    button_stop->signal_clicked().connect(sigc::mem_fun(this, &UIWindow::on_button_stop_clicked));
 
   // Clean up.
   m_refBuilder.reset();         // We're done with the builder.
+
+  // Connect signals.
+  m_button_record->signal_clicked().connect([this]{ on_button_record_clicked(); });
+  m_button_play->signal_clicked().connect([this]{ on_button_play_clicked(); });
+  m_button_stop->signal_clicked().connect([this]{ on_button_stop_clicked(); });
+  m_checkbox_repeat->signal_toggled().connect([this]{ on_repeat_toggled(); });
+  m_checkbox_playback_to_input->signal_toggled().connect([this]{ on_playback_to_input_toggled(); });
+  m_radio_input->signal_toggled().connect([this]{ on_record_radio_toggled(RecordingDeviceState::record_input); });
+  m_radio_test_source->signal_toggled().connect([this]{ on_record_radio_toggled(RecordingDeviceState::record_output); });
+  m_radio_passthrough->signal_toggled().connect([this]{ on_stop_radio_toggled(RecordingDeviceState::passthrough); });
+  m_radio_test_output->signal_toggled().connect([this]{ on_stop_radio_toggled(RecordingDeviceState::direct); });
+  m_radio_mute->signal_toggled().connect([this]{ on_stop_radio_toggled(RecordingDeviceState::muted); });
+
+  // Connect audio thread dispatcher.
+  m_state_changed.connect([this]{ on_wakeup(); });
+  m_state.connect([this]{ m_state_changed.emit(); });
 }
 
 UIWindow::~UIWindow()
 {
 }
 
-using namespace FFTJackClientStates;
-
 void UIWindow::on_button_record_clicked()
 {
-  m_set_record_state_cb(record_input);
+  if (!m_button_record->get_active())
+  {
+    if (!m_internal_set_active)
+    {
+      // User clicked on active Record button. Undo this action.
+      m_internal_set_active = true;
+      auto&& reset_internal_set_active = at_scope_end([this](){ m_internal_set_active = false; });
+      m_button_record->set_active(true);
+      // But restart recording.
+      m_state.clear_and_set(0, RecordingDeviceState::clear_buffer);
+    }
+    return;
+  }
+  else if (m_internal_set_active)
+  {
+    // We're just undoing a user click.
+    return;
+  }
+  // Button was pressed by the user.
+  stop_playback_if_any();
+  // (Re)start recording.
+  m_state.clear_and_set(RecordingDeviceState::record_mask, m_record_radio_buttons_state | RecordingDeviceState::clear_buffer);
 }
 
 void UIWindow::on_button_play_clicked()
 {
-  m_set_playback_state_cb(playback_to_output);
+  if (!m_button_play->get_active())
+  {
+    if (!m_internal_set_active)
+    {
+      // User clicked on active Play button. Undo this action.
+      m_internal_set_active = true;
+      auto&& reset_internal_set_active = at_scope_end([this](){ m_internal_set_active = false; });
+      m_button_play->set_active(true);
+      // But start from the beginning.
+      m_state.clear_and_set(0, RecordingDeviceState::playback_reset);
+    }
+    return;
+  }
+  else if (m_internal_set_active)
+  {
+    // We're just undoing a user click.
+    return;
+  }
+  // Button was pressed by the user.
+  stop_recording_if_any();
+  // Start the playback.
+  m_state.set_playback_state(RecordingDeviceState::playback);
+}
+
+void UIWindow::stop_recording_if_any()
+{
+  m_state.set_recording_state(0);
+  if (m_button_record->get_active())
+  {
+    m_internal_set_active = true;
+    auto&& reset_internal_set_active = at_scope_end([this](){ m_internal_set_active = false; });
+    m_button_record->set_active(false);
+  }
+}
+
+void UIWindow::stop_playback_if_any()
+{
+  m_state.set_playback_state(m_stop_radio_buttons_state);
+  if (m_button_play->get_active())
+  {
+    m_internal_set_active = true;
+    auto&& reset_internal_set_active = at_scope_end([this](){ m_internal_set_active = false; });
+    m_button_play->set_active(false);
+  }
 }
 
 void UIWindow::on_button_stop_clicked()
 {
-  m_set_record_state_cb(none);
-  m_set_playback_state_cb(passthrough);
+  stop_recording_if_any();
+  stop_playback_if_any();
+}
+
+void UIWindow::on_repeat_toggled()
+{
+  Dout(dc::notice, "Calling UIWindow::on_repeat_toggled(): " << m_checkbox_repeat->get_active());
+  m_play_check_buttons_state = (m_play_check_buttons_state & ~RecordingDeviceState::playback_repeat) | (m_checkbox_repeat->get_active() ? RecordingDeviceState::playback_repeat : 0);
+  m_state.clear_and_set(RecordingDeviceState::gui2jack_mask, m_play_check_buttons_state);
+}
+
+void UIWindow::on_playback_to_input_toggled()
+{
+  Dout(dc::notice, "Calling UIWindow::on_playback_to_input_toggled(): " << m_checkbox_playback_to_input->get_active());
+  m_play_check_buttons_state = (m_play_check_buttons_state & ~RecordingDeviceState::playback_to_input) | (m_checkbox_playback_to_input->get_active() ? RecordingDeviceState::playback_to_input : 0);
+  m_state.clear_and_set(RecordingDeviceState::gui2jack_mask, m_play_check_buttons_state);
+}
+
+void UIWindow::on_record_radio_toggled(int state)
+{
+  Gtk::RadioButton* radio_button;
+  switch (state)
+  {
+    case RecordingDeviceState::record_input:
+      radio_button = m_radio_input;
+      break;
+    default: // RecordingDeviceState::record_output
+      assert(state == RecordingDeviceState::record_output);
+      radio_button = m_radio_test_source;
+      break;
+  }
+  if (radio_button->get_active())
+    m_record_radio_buttons_state = state;
+  else if (m_record_radio_buttons_state == state)
+    m_record_radio_buttons_state = 0;
+  Dout(dc::notice, "UIWindow::on_record_radio_toggled(" << state << "): " << radio_button->get_active() << "; m_record_radio_buttons_state = " << m_record_radio_buttons_state);
+}
+
+void UIWindow::on_stop_radio_toggled(int state)
+{
+  Gtk::RadioButton* radio_button;
+  switch (state)
+  {
+    case RecordingDeviceState::passthrough:
+      radio_button = m_radio_passthrough;
+      break;
+    case RecordingDeviceState::direct:
+      radio_button = m_radio_test_output;
+      break;
+    default: // RecordingDeviceState::muted
+      assert(state == RecordingDeviceState::muted);
+      radio_button = m_radio_mute;
+      break;
+  }
+  if (radio_button->get_active())
+    m_stop_radio_buttons_state = state;
+  else if (m_stop_radio_buttons_state == state)
+    m_stop_radio_buttons_state = RecordingDeviceState::muted;
+  Dout(dc::notice, "Calling UIWindow::on_stop_radio_toggled(" << state << "): " << radio_button->get_active() << "; m_stop_radio_buttons_state = " << m_stop_radio_buttons_state);
+  if (!m_state.is_playing())
+    m_state.set_playback_state(m_stop_radio_buttons_state);
+}
+
+void UIWindow::on_wakeup()
+{
+  Dout(dc::notice, "UIWindow::on_wakeup()");
+  // Fix button states.
+  if (!m_state.is_playing())
+    stop_playback_if_any();
+  if (!m_state.is_recording())
+    stop_recording_if_any();
 }

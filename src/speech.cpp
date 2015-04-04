@@ -84,24 +84,26 @@ int main(int argc, char* argv[])
     // Create the jack client.
     FFTJackClient jack_client("Speech", 10.0);
 
-    // Connect the ports. Note: you can't do this before
-    // the client is activated, because we can't allow
-    // connections to be made to clients that aren't
-    // running.
-    jack_client.activate();
-    jack_client.connect();
-
-    // Show a GUI.
+    // Create the UIWindow before activating the jack client, because it
+    // creates a dispatcher that theoretically could be called from the jack client.
     Glib::RefPtr<Gtk::Application> refApp = Gtk::Application::create(argc, argv, "com.alinoe.speech");
-    refApp->run(*new UIWindow(glade_path, css_path, "window1",
-          std::bind(&FFTJackClient::set_playback_state, &jack_client, std::placeholders::_1),
-          std::bind(&FFTJackClient::set_recording_state, &jack_client, std::placeholders::_1)));
+    UIWindow* ui_window = new UIWindow(glade_path, css_path, "window1", jack_client);
+
+    // Connect the ports. Note: you can't do this before the client is activated,
+    // because we can't allow connections to be made to clients that aren't running.
+    jack_client.activate();
+    jack_client.connect_ports();
+
+    // Show the GUI.
+    refApp->run(*ui_window);
     // Bug workaround for https://bugzilla.gnome.org/show_bug.cgi?id=744876
     // Let the mainloop run until all pending activity is handled.
     while (g_main_context_iteration(NULL, FALSE)) ;
 
+#if 0 // For now, exit jack client when GUI window is closed.
     // Run until killed by the user.
     sleep(-1);
+#endif
   }
   catch (AIAlert::ErrorCode const& error)
   {
