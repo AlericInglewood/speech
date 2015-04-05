@@ -47,7 +47,7 @@ class JackFIFOBuffer {
     JackFIFOBuffer(int nchunks, jack_nframes_t nframes) : m_buffer(NULL) { reallocate_buffer(nchunks + 1, nframes); }
 
     //! Destructor.
-    virtual ~JackFIFOBuffer() { delete [] m_buffer; }
+    virtual ~JackFIFOBuffer();
 
     //-------------------------------------------------------------------------
     // Producer thread.

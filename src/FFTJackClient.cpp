@@ -27,10 +27,20 @@
 #include "FFTJackClient.h"
 #include "utils/macros.h"
 
-FFTJackClient::FFTJackClient(char const* name, double period) : JackClient(name), RecordingDeviceState(passthrough), m_fft_buffer_size(0), m_playback_state(0), m_recording_buffer(m_client, period), m_crossfade_frame(-1)
+FFTJackClient::FFTJackClient(char const* name, double period) : JackClient(name), RecordingDeviceState(passthrough),
+  m_fft_buffer_size(0), m_playback_state(0), m_silence_buffer(NULL), m_test_buffer(NULL), m_recording_buffer(m_client, period), m_crossfade_frame(-1)
 {
   // Set the size of the FFT buffer, in samples.
   set_fft_buffer_size(256);
+
+  // Prepare FFTW.
+  m_fftwf_real_array = fftwf_alloc_real(256);
+  m_fftwf_complex_array = fftwf_alloc_complex(256);
+  Dout(dc::notice, "Calling fftwf_plan_dft_r2c_1d()");
+  m_r2c_plan = fftwf_plan_dft_r2c_1d(256, m_fftwf_real_array, m_fftwf_complex_array, FFTW_PATIENT | FFTW_DESTROY_INPUT);
+  Dout(dc::notice, "Calling fftwf_plan_dft_c2r_1d()");
+  m_c2r_plan = fftwf_plan_dft_c2r_1d(256, m_fftwf_complex_array, m_fftwf_real_array, FFTW_PATIENT | FFTW_DESTROY_INPUT);
+  Dout(dc::notice, "Done()");
 }
 
 void FFTJackClient::output_source_changed()
@@ -41,6 +51,8 @@ void FFTJackClient::output_source_changed()
   m_crossfade_nframes = m_sample_rate / 50;     // Suppress output in 20 ms.
   m_crossfade_frame_normalization = PI / m_crossfade_nframes;
 }
+
+#define DEBUG_PROCESS 0
 
 int FFTJackClient::process(jack_default_audio_sample_t* in, jack_default_audio_sample_t* out, jack_nframes_t nframes)
 {
@@ -53,6 +65,7 @@ int FFTJackClient::process(jack_default_audio_sample_t* in, jack_default_audio_s
   bool const perform_test = direct_or_playback_to_input || recording_from_test;                         // Whether or not we need to perform the test.
   bool const test_is_buffered = direct_or_playback_to_input && (crossfading || recording_from_test);    // The output of test must be written to the output
 
+#if DEBUG_PROCESS
   static int last_statebits = 0;
   static bool last_crossfading = false;
   if (statebits != last_statebits || crossfading != last_crossfading)
@@ -66,9 +79,11 @@ int FFTJackClient::process(jack_default_audio_sample_t* in, jack_default_audio_s
   }
   last_statebits = statebits;
   last_crossfading = crossfading;
+#endif // DEBUG_PROCESS
 
   bool perform_recording = statebits & record_input;    // Start with the recording stage? Start with the test (if any) unless we're recording directly from the input.
 
+#if DEBUG_PROCESS
   DoutEntering(dc::notice, "FFTJackClient::process(" << in << ", " << out << ", " << nframes << ")");
   assert(nframes == m_input_buffer_size);
   Dout(dc::notice, "statebits = " << (void*)(long)statebits);
@@ -79,6 +94,10 @@ int FFTJackClient::process(jack_default_audio_sample_t* in, jack_default_audio_s
                  "; perform_test = " << perform_test <<
                  "; test_is_buffered = " << test_is_buffered <<
                  "; perform_recording = " << perform_recording);
+#endif // DEBUG_PROCESS
+  // Make sure that jack passes a 16 bytes aligned buffer.
+  assert((reinterpret_cast<intptr_t>(in) & 0xf) == 0);
+  assert((reinterpret_cast<intptr_t>(out) & 0xf) == 0);
 
   if (AI_UNLIKELY(statebits & commands_mask))
   {
@@ -103,24 +122,32 @@ int FFTJackClient::process(jack_default_audio_sample_t* in, jack_default_audio_s
     {
       if ((statebits & record_mask))                    // Are we recording?
       {
+#if DEBUG_PROCESS
         Dout(dc::notice, "RECORDING");
+#endif // DEBUG_PROCESS
         // Write the appropriate data to the recording buffer.
         if (AI_UNLIKELY(!m_recording_buffer.push((statebits & record_input) ? in : test_out)))
         {
+#if DEBUG_PROCESS
           Debug(if (!dc::notice.is_on()) dc::notice.on());
           Dout(dc::notice, "(RECORDING -->) BUFFER FULL!");
+#endif // DEBUG_PROCESS
           // The recording buffer is full, stop recording.
           statebits &= ~record_mask;
           m_state.fetch_and(~record_mask);
           m_wakeup_gui();
         }
+#if DEBUG_PROCESS
         else
           Dout(dc::notice, "Wrote " << ((statebits & record_input) ? in : test_out) << " to recording buffer.");
+#endif // DEBUG_PROCESS
       }
     }
     else if (perform_test)                              // Are we testing?
     {
+#if DEBUG_PROCESS
       Dout(dc::notice, "PERFORMING TEST");
+#endif // DEBUG_PROCESS
       // Determine the test source.
       jack_default_audio_sample_t* test_in = (playback_state == playback && (statebits & playback_to_input)) ? m_recording_buffer.read() : in;
       bool empty = !test_in;
@@ -134,24 +161,38 @@ int FFTJackClient::process(jack_default_audio_sample_t* in, jack_default_audio_s
         }
         if (empty)
         {
+#if DEBUG_PROCESS
           Debug(if (!dc::notice.is_on()) dc::notice.on());
           Dout(dc::notice, "(PERFORMING TEST -->) BUFFER EMPTY!");
+#endif // DEBUG_PROCESS
           // Recording buffer is empty, input silence.
-          test_in = m_silence_buffer.get();
+          test_in = m_silence_buffer;
           m_state.fetch_and(~(playback_mask | (playback_mask << prev_mask_shift)));
           m_wakeup_gui();
         }
       }
+#if DEBUG_PROCESS
       else if (playback_state == playback && (statebits & playback_to_input))
         Dout(dc::notice, "Read " << test_in << " from recording buffer.");
+#endif // DEBUG_PROCESS
+
       // Determine the test output.
       // Note that m_test_buffer cannot change at this point, after activation (otherwise we wouldn't be here)
       // buffer_size_changed() is guaranteed to only be called by the same thread as this one.
-      test_out = test_is_buffered ? m_test_buffer.get() : out;
+      test_out = test_is_buffered ? m_test_buffer : out;
       // Perform test operation.
+      assert(fftwf_alignment_of(test_in) == fftwf_alignment_of(m_fftwf_real_array));
+      assert(fftwf_alignment_of(test_out) == fftwf_alignment_of(m_fftwf_real_array));
+      fftwf_execute_dft_r2c(m_r2c_plan, test_in, m_fftwf_complex_array);
+      for (jack_nframes_t freq = 0; freq <= nframes / 2; ++freq)
+      {
+        m_complex_array[freq] = std::abs(m_complex_array[freq]);
+      }
+      fftwf_execute_dft_c2r(m_c2r_plan, m_fftwf_complex_array, test_out);
+      // Normalize.
       for (jack_nframes_t frame = 0; frame < nframes; ++frame)
       {
-        test_out[frame] = test_in[frame] * 0.1f;
+        test_out[frame] /= nframes;
       }
     }
     // Go to the other task.
@@ -161,9 +202,11 @@ int FFTJackClient::process(jack_default_audio_sample_t* in, jack_default_audio_s
   // If we're playing the test output and test isn't buffered then it was written to out and we're done.
   if (direct_or_playback_to_input && !test_is_buffered)
   {
+#if DEBUG_PROCESS
     Dout(dc::notice, "DONE!");
     Debug(if (dc::notice.is_on()) dc::notice.off());
     assert(!libcwd::channels::dc::notice.is_on());
+#endif // DEBUG_PROCESS
     return 0;
   }
 
@@ -173,16 +216,20 @@ int FFTJackClient::process(jack_default_audio_sample_t* in, jack_default_audio_s
 
   for (int stage = 0; stage < 2; ++stage)
   {
+#if DEBUG_PROCESS
     Dout(dc::notice, "stage " << stage << "; playback_state is now " << playback_state);
+#endif // DEBUG_PROCESS
     switch(playback_state)
     {
       case muted:
-        *source = crossfading ? m_silence_buffer.get() : NULL; // No need for the silence buffer when we're not crossfading.
+        *source = crossfading ? m_silence_buffer : NULL; // No need for the silence buffer when we're not crossfading.
         break;
       case playback:
         if (!(statebits & playback_to_input))
         {
+#if DEBUG_PROCESS
           Dout(dc::notice, "Playing back to output");
+#endif // DEBUG_PROCESS
           *source = m_recording_buffer.read();
           bool empty = !*source;
           if (AI_UNLIKELY(empty))
@@ -195,16 +242,20 @@ int FFTJackClient::process(jack_default_audio_sample_t* in, jack_default_audio_s
             }
             if (empty)
             {
+#if DEBUG_PROCESS
               Debug(if (!dc::notice.is_on()) dc::notice.on());
               Dout(dc::notice, "(Playing back to output -->) BUFFER EMPTY!");
+#endif // DEBUG_PROCESS
               // Recording buffer is empty, mute the output.
-              *source = m_silence_buffer.get();
+              *source = m_silence_buffer;
               m_state.fetch_and(~(playback_mask << ((source == &current_source) ? 0 : prev_mask_shift)));
               m_wakeup_gui();
             }
           }
+#if DEBUG_PROCESS
           else
             Dout(dc::notice, "Read " << *source << " from recording buffer.");
+#endif // DEBUG_PROCESS
           break;
         }
         /*fall-through*/
@@ -217,7 +268,9 @@ int FFTJackClient::process(jack_default_audio_sample_t* in, jack_default_audio_s
       default:
         DoutFatal(dc::core, "Unhandled playback_state " << playback_state);
     }
+#if DEBUG_PROCESS
     Dout(dc::notice, "Stage " << stage << ": source = " << *source);
+#endif // DEBUG_PROCESS
     if (AI_LIKELY(!crossfading))        // Leave prev_source at NULL when we're not crossfading.
       break;
     // Next, determine the previous source.
@@ -231,19 +284,25 @@ int FFTJackClient::process(jack_default_audio_sample_t* in, jack_default_audio_s
   // If there is only one source then prev_source is NULL.
   if (AI_LIKELY(current_source && !prev_source))
   {
+#if DEBUG_PROCESS
     Dout(dc::notice, "Copying " << current_source << " to out.");
+#endif // DEBUG_PROCESS
     // Pass through.
     std::memcpy(out, current_source, sizeof(jack_default_audio_sample_t) * nframes);
   }
   else if (!current_source)
   {
+#if DEBUG_PROCESS
     Dout(dc::notice, "Writing zeroes to out.");
+#endif // DEBUG_PROCESS
     // Muted.
     std::memset(out, 0, sizeof(jack_default_audio_sample_t) * nframes);
   }
   else
   {
+#if DEBUG_PROCESS
     Dout(dc::notice, "Crossfading from " << prev_source << " to " << current_source << "!");
+#endif // DEBUG_PROCESS
     // Crossfade from prev_source to current_source.
     jack_nframes_t frame = 0;
     while (frame < nframes && m_crossfade_frame < m_crossfade_nframes)
@@ -255,8 +314,10 @@ int FFTJackClient::process(jack_default_audio_sample_t* in, jack_default_audio_s
     }
     if (m_crossfade_frame == m_crossfade_nframes)       // Did the crossfading finish?
     {
+#if DEBUG_PROCESS
       Debug(if (!dc::notice.is_on()) dc::notice.on());
       Dout(dc::notice, "(Crossfading from ... to ...! -->) Crossfading finished!");
+#endif // DEBUG_PROCESS
       // Fill the remainder of the current output buffer if the crossfading finished before the end.
       if (frame < nframes)
       {
@@ -268,8 +329,10 @@ int FFTJackClient::process(jack_default_audio_sample_t* in, jack_default_audio_s
     }
   }
 
+#if DEBUG_PROCESS
   Debug(if (dc::notice.is_on()) dc::notice.off());
   assert(!libcwd::channels::dc::notice.is_on());
+#endif // DEBUG_PROCESS
   return 0;
 }
 
@@ -292,11 +355,17 @@ void FFTJackClient::buffer_size_changed()
     set_fft_buffer_size(m_input_buffer_size);
   }
 
+  // Clean up old buffers.
+  if (m_silence_buffer)
+    fftwf_free(m_silence_buffer);
+  if (m_test_buffer)
+    fftwf_free(m_test_buffer);
+
   // Make sure that our internal buffers are large enough.
-  m_silence_buffer.reset(new jack_default_audio_sample_t[m_input_buffer_size]);
-  m_test_buffer.reset(new jack_default_audio_sample_t[m_input_buffer_size]);
+  m_silence_buffer = fftwf_alloc_real(m_input_buffer_size);
+  m_test_buffer = fftwf_alloc_real(m_input_buffer_size);
   // Clear the silence buffer with zeroes.
-  std::memset(&m_silence_buffer[0], 0, sizeof(jack_default_audio_sample_t) * m_input_buffer_size);
+  std::memset(m_silence_buffer, 0, sizeof(jack_default_audio_sample_t) * m_input_buffer_size);
 
   m_recording_buffer.buffer_size_changed(m_input_buffer_size);
 }

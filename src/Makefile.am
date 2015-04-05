@@ -23,9 +23,9 @@ speech_SOURCES = \
 	UIWindow.cpp \
 	speech.cpp
 
-speech_CXXFLAGS = @LIBXML_CFLAGS@ @CXXFLAGS@ @LIBCWD_FLAGS@ @LIBJACK_CFLAGS@ @LIBGTKMM_CFLAGS@
+speech_CXXFLAGS = @LIBXML_CFLAGS@ @CXXFLAGS@ @LIBCWD_FLAGS@ @LIBJACK_CFLAGS@ @LIBGTKMM_CFLAGS@ @LIBFFTWF_CFLAGS@
 speech_LDFLAGS = -Wl,--export-dynamic
-speech_LDADD = threadsafe/.libs/libthreadsafe.a xml/.libs/libxml.a utils/.libs/libutils.a cwd/.libs/libdebug.a @LIBXML_LIBS@ @LIBS@ @LIBCWD_LIBS@ @LIBJACK_LIBS@ @LIBGTKMM_LIBS@
+speech_LDADD = threadsafe/.libs/libthreadsafe.a xml/.libs/libxml.a utils/.libs/libutils.a cwd/.libs/libdebug.a @LIBXML_LIBS@ @LIBS@ @LIBCWD_LIBS@ @LIBJACK_LIBS@ @LIBGTKMM_LIBS@ @LIBFFTWF_LIBS@
 speech_DEPENDENCIES = threadsafe/.libs/libthreadsafe.la xml/libxml.la utils/libutils.la cwd/libdebug.la
 
 # --------------- Maintainer's Section

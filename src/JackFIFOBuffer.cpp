@@ -21,6 +21,7 @@
 #include "sys.h"
 
 #include <cmath>
+#include <fftw3.h>
 
 #include "JackFIFOBuffer.h"
 #include "debug.h"
@@ -30,8 +31,9 @@ void JackFIFOBuffer::reallocate_buffer(int nchunks, jack_nframes_t nframes)
   m_nframes = nframes;
   m_capacity = nframes * nchunks;
   // The following is safe because the buffer isn't used at the moment.
-  delete m_buffer;
-  m_buffer = new jack_default_audio_sample_t[m_capacity];
+  if (m_buffer)
+    fftwf_free(m_buffer);
+  m_buffer = fftwf_alloc_real(m_capacity);
   Dout(dc::notice, "Allocated buffer at " << m_buffer << " till " << &m_buffer[m_capacity]);
   m_head = m_buffer;
   clear();
@@ -47,6 +49,12 @@ JackFIFOBuffer::JackFIFOBuffer(jack_client_t* client, double period) : m_buffer(
   intptr_t const required_samples = std::round(period * sample_rate);
   int const nchunks = (required_samples + nframes / 2) / nframes + 1;
   reallocate_buffer(nchunks, nframes);
+}
+
+JackFIFOBuffer::~JackFIFOBuffer()
+{
+  if (m_buffer)
+    fftwf_free(m_buffer);
 }
 
 void JackFIFOBuffer::buffer_size_changed(jack_nframes_t nframes)
