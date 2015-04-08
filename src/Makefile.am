@@ -13,15 +13,16 @@ DEFAULT_INCLUDES=-iquote $(top_builddir) -iquote $(top_builddir)/src -iquote $(s
 CXXFLAGS =
 
 speech_SOURCES = \
-	Persist.cpp \
-	Configuration.cpp \
-	JackFIFOBuffer.cpp \
+        Persist.cpp \
+        Configuration.cpp \
+        JackFIFOBuffer.cpp \
         RecordingDeviceState.cpp \
-	FFTJackClient.cpp \
-	JackClient.cpp \
-	JackPorts.cpp \
-	UIWindow.cpp \
-	speech.cpp
+        FFTJackClient.cpp \
+        JackChunkAllocator.cpp \
+        JackClient.cpp \
+        JackPorts.cpp \
+        UIWindow.cpp \
+        speech.cpp
 
 speech_CXXFLAGS = @LIBXML_CFLAGS@ @CXXFLAGS@ @LIBCWD_FLAGS@ @LIBJACK_CFLAGS@ @LIBGTKMM_CFLAGS@ @LIBFFTWF_CFLAGS@
 speech_LDFLAGS = -Wl,--export-dynamic

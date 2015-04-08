@@ -72,16 +72,11 @@ AC_PROG_LIBTOOL
 dnl Detect boost.
 CW_BOOST([$cw_enable_static], [no], [filesystem system])
 
-# Library flags.
-#CW_LIB_LIBGTKMM
-
 dnl Libraries.
 PKG_CHECK_MODULES([LIBXML], [libxml++-2.6])
 PKG_CHECK_MODULES([LIBJACK], [jack])
 PKG_CHECK_MODULES([LIBGTKMM], [gtkmm-3.0])
 PKG_CHECK_MODULES([LIBFFTWF], [fftw3f])
-
-dnl LIBFFTWF_LIBS="$LIBFFTWF_LIBS -lm"
 
 dnl Used in sys.h to force recompilation when the compiler version changes.
 CW_PROG_CXX_FINGER_PRINTS
