@@ -26,7 +26,8 @@
 #include <cstdint>
 #include <cstring>
 
-class JackFIFOBuffer {
+class JackFIFOBuffer
+{
   private:
     jack_nframes_t m_nframes;                           //!< Number of frames per jack buffer (one frame is one sample because this is mono).
     intptr_t m_capacity;                                        //!< Total size of m_buffer in jack_default_audio_sample_t's (nframes * nchunks).

@@ -26,7 +26,8 @@
 #include <string>
 #include <set>
 
-class Configuration : public Persist, Singleton<Configuration> {
+class Configuration : public Persist, Singleton<Configuration>
+{
     friend_Instance;
   private:
     Configuration() : m_changed(false) { }

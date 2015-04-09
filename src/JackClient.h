@@ -25,7 +25,8 @@
 
 class Configuration;
 
-class JackClient {
+class JackClient
+{
   protected:
     jack_client_t* m_client;
     jack_nframes_t m_sample_rate;

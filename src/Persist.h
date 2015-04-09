@@ -24,7 +24,8 @@
 #include "xml/Bridge.h"
 #include <boost/filesystem.hpp>
 
-class Persist {
+class Persist
+{
   private:
     boost::filesystem::path m_path;
 

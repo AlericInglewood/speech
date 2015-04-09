@@ -23,7 +23,8 @@
 
 #include <jack/jack.h>
 
-class JackPorts {
+class JackPorts
+{
   private:
     char const** m_ports;
     unsigned long m_flags;

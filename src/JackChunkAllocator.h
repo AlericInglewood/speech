@@ -25,12 +25,16 @@
 #include <cstddef>
 #include <jack/jack.h>
 
-class JackChunkAllocator {
+class JackChunkAllocator
+{
   private:
-    struct chunk {
-      union {
+    struct chunk
+    {
+      union
+      {
         jack_default_audio_sample_t data[16];   // Audio data - the real size being m_chunk_size, not 16.
-        struct {
+        struct
+        {
           chunk* next;                          // Points to next free chunk in the chain, or NULL (call find_free_chunk_after(this)).
         } meta;                                 // Only valid for free (unused) chunks.
       };
