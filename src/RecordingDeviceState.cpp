@@ -38,7 +38,7 @@
 //              |                                                       passthrough
 //              `---------------->-------------------------------------------------o
 //
-// The playback_mask bits detemine the state of the TEST and OUTPUT switches:
+// The playback_mask bits determine the state of the TEST and OUTPUT switches:
 //
 // (statebits & playback_mask)    TEST               OUTPUT
 // ---------------------------------------------------------------------------

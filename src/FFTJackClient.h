@@ -23,6 +23,8 @@
 
 #include "JackClient.h"
 #include "JackFIFOBuffer.h"
+#include "MemcpyJackProcessor.h"
+#include "FFTJackProcessor.h"
 #include "RecordingDeviceState.h"
 
 #include <fftw3.h>
@@ -39,13 +41,10 @@ class FFTJackClient : public JackClient, public RecordingDeviceState
     jack_default_audio_sample_t* m_silence_buffer;
     jack_default_audio_sample_t* m_test_buffer;
     JackFIFOBuffer m_recording_buffer;
-    float* m_fftwf_real_array;
-    union {
-      fftwf_complex* m_fftwf_complex_array;
-      std::complex<float>* m_complex_array;
-    };
-    fftwf_plan m_r2c_plan;
-    fftwf_plan m_c2r_plan;
+    JackInput m_jack_server_input;
+    JackOutput m_jack_server_output;
+    MemcpyJackProcessor m_passthrough;
+    FFTJackProcessor m_fft_processor;
 
     // Helper variables used during crossfading.
     jack_nframes_t m_crossfade_frame;

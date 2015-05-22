@@ -21,6 +21,10 @@ speech_SOURCES = \
         JackChunkAllocator.cpp \
         JackClient.cpp \
         JackPorts.cpp \
+        JackProcessor.cpp \
+        JackCrossfader.cpp \
+        MemcpyJackProcessor.cpp \
+        FFTJackProcessor.cpp \
         UIWindow.cpp \
         speech.cpp
 

@@ -51,10 +51,11 @@ class RecordingDeviceState
 
   protected:
     std::atomic<int> m_state;
+    int m_last_state;
     std::function<void()> m_wakeup_gui;
 
   public:
-    RecordingDeviceState(int initial_state) : m_state(initial_state) { }
+    RecordingDeviceState(int initial_state) : m_state(initial_state), m_last_state(-1) { }
     virtual ~RecordingDeviceState() { }
 
     void connect(std::function<void()> const& wakeup_gui) { m_wakeup_gui = wakeup_gui; }

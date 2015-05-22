@@ -22,11 +22,14 @@
 #define JACK_CHUNK_ALLOCATOR_H
 
 #include "utils/macros.h"
+#include "utils/Singleton.h"
 #include <cstddef>
 #include <jack/jack.h>
 
-class JackChunkAllocator
+class JackChunkAllocator : public Singleton<JackChunkAllocator>
 {
+    friend_Instance;
+
   private:
     struct chunk
     {
@@ -46,7 +49,10 @@ class JackChunkAllocator
     chunk* m_free_chunk;        // Pointer to the first chunk in the free list.
     chunk* m_begin;             // Start of last allocated block.
     void const* m_end;          // One past the end of last allocated block.
-    chunk const* const m_start; // Start of first allocated block.
+    chunk const* m_start;       // Start of first allocated block.
+
+    static int s_increment_chunks;
+    static int s_initial_chunks;
 
   private:
     // Return the next chunk in the block (or a pointer that points one past the end of it).
@@ -60,10 +66,11 @@ class JackChunkAllocator
     // Initialize m_free_chunk.
     void find_free_chunk_after(chunk* last_chunk);
 
-  public:
-    JackChunkAllocator(jack_nframes_t nframes, int increment_chunks = 64, int initial_chunks = 64);
+  private:
+    JackChunkAllocator();
     ~JackChunkAllocator();
 
+  public:
     // Return a pointer to fftwf_malloc aligned memory of m_chunk_size samples in O(1) time.
     // It can happen occassionally that no more blocks are available, in that case
     // a call to fftwf_malloc() happens which is slow -- the only way to avoid that
@@ -84,6 +91,9 @@ class JackChunkAllocator
       free_chunk->meta.next = m_free_chunk;
       m_free_chunk = free_chunk;
     }
+
+    // Return current chunk size.
+    jack_nframes_t chunk_size() const { return m_chunk_size; }
 
     // Re-initialize this object for a new chuck size.
     // This invalidates ALL pointers previously returned by allocate()!

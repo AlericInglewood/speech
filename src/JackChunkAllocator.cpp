@@ -21,6 +21,7 @@
 #include "sys.h"
 
 #include "JackChunkAllocator.h"
+#include "utils/Singleton.h"
 #include "fftw3.h"
 #include "debug.h"
 
@@ -54,14 +55,26 @@ inline JackChunkAllocator::chunk* JackChunkAllocator::allocate_new_block(size_t 
   return m_begin;
 }
 
-JackChunkAllocator::JackChunkAllocator(jack_nframes_t nframes, int increment_chunks, int initial_chunks) :
-  m_chunk_size(nframes),
-  m_initial_size(nframes * sizeof(jack_default_audio_sample_t) * initial_chunks),
-  m_increment_size(nframes * sizeof(jack_default_audio_sample_t) * increment_chunks),
-  m_begin(allocate_new_block(m_initial_size)),
-  m_start(m_begin)
+JackChunkAllocator::JackChunkAllocator() : m_begin(NULL), m_start(NULL)
 {
-  ASSERT(increment_chunks > 1 && initial_chunks > 1);                           // Otherwise increment(m_begin) would already be outside the block
+}
+
+int JackChunkAllocator::s_increment_chunks = 64;
+int JackChunkAllocator::s_initial_chunks = 64;
+
+void JackChunkAllocator::buffer_size_changed(jack_nframes_t nframes)
+{
+  m_chunk_size = nframes;
+  m_initial_size = nframes * sizeof(jack_default_audio_sample_t) * s_initial_chunks;
+  m_increment_size = nframes * sizeof(jack_default_audio_sample_t) * s_increment_chunks;
+
+  // (Re)initialize the chunk pool.
+  if (m_begin)
+    fftwf_free(m_begin);
+  m_begin = allocate_new_block(m_initial_size);
+  m_start = m_begin;
+
+  ASSERT(s_increment_chunks > 1 && s_initial_chunks > 1);                       // Otherwise increment(m_begin) would already be outside the block
                                                                                 // (seriously though, these two sizes should be MUCH larger than 1).
   ASSERT(nframes * sizeof(jack_default_audio_sample_t) >= sizeof(chunk));       // struct chunk must fit inside it.
   ASSERT((nframes * sizeof(jack_default_audio_sample_t)) % 16 == 0);            // Must be a multiple of 16.
@@ -82,7 +95,7 @@ JackChunkAllocator::~JackChunkAllocator()
   while(block);
 }
 
-// This function set m_free_chunk to point to the next, never used before, chunk after last_chunk.
+// This function sets m_free_chunk to point to the next, never used before, chunk after last_chunk.
 void JackChunkAllocator::find_free_chunk_after(chunk* last_chunk)
 {
   ASSERT(last_chunk->meta.next == NULL);
@@ -103,3 +116,5 @@ void JackChunkAllocator::find_free_chunk_after(chunk* last_chunk)
   // Initialize the new chunk.
   m_free_chunk->meta.next = NULL;
 }
+
+static SingletonInstance<JackChunkAllocator> dummy __attribute__ ((__unused__));
