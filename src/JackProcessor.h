@@ -29,7 +29,8 @@
 class JackInput;
 class JackOutput;
 class JackProcessor;
-class JackCrossfader;
+class JackSwitch;
+class RecorderJackProcessor;
 
 // This is what JackProcessor gets data FROM.
 class JackInput
@@ -62,24 +63,28 @@ class JackInput
     }
 
     // Process the whole chain up till and including this output.
-    void process();
+    void process(int sequence_number);
 
     // Accessors to underlaying buffer used by JackProcessor derived classes.
     inline jack_default_audio_sample_t* chunk_ptr() const;
     inline jack_nframes_t nframes() const;
     JackProcessor* owner() { return m_owner; }
-    bool has_buffer() const { return m_in; }
+    JackProcessor const* owner() const { return m_owner; }
+    JackOutput const* connected_output() const { return m_connected_output; }
+    inline bool provides_buffer() const;
 
   private:
     // Connect input to output.
     friend void operator<<(JackInput& input, JackOutput& output) { input.connect_to(output); }
     friend JackInput& operator<<(JackInput& input, JackProcessor& processor);
-    friend void operator<<(JackInput& input, JackCrossfader& crossfader);
+    friend JackInput& operator<<(JackProcessor& processor1, JackProcessor& processor2);
+    friend void operator<<(JackProcessor& processor, JackOutput& output);
+    friend void operator<<(JackInput& input, JackSwitch& jack_switch);
     void connect_to(JackOutput& output);
 
   private:
     friend class JackProcessor;  // Must not access private data above this line.
-    friend class JackCrossfader; // Defines more input(s).
+    friend class JackSwitch;     // Defines more input(s).
     // Used by the constructor of JackProcessor.
     JackInput(JackProcessor* owner) : m_in(NULL), m_chunk_size(0), m_connected_output(NULL), m_owner(owner), m_connected_owner(NULL) { }
     // Used by the destructor of JackProcessor.
@@ -114,6 +119,9 @@ class JackOutput
       m_chunk_size = nframes;
     }
 
+    // Should only be used by JackProcessors that provide the buffer dynamically.
+    inline void update_buffer_ptr(jack_default_audio_sample_t* ptr);
+
     // Allocate a new buffer.
     void create_buffer();
 
@@ -124,7 +132,9 @@ class JackOutput
     jack_default_audio_sample_t* chunk_ptr() const { ASSERT(m_out || m_connected_input); return m_connected_input ? m_connected_input->chunk_ptr() : m_out; }
     jack_nframes_t nframes() const { return m_connected_input ? m_connected_input->nframes() : m_chunk_size; }
     JackProcessor* owner() { return m_owner; }
-    bool has_buffer() const { return m_out; }
+    JackProcessor const* owner() const { return m_owner; }
+    JackInput const* connected_input() const { return m_connected_input; }
+    inline bool provides_buffer() const;
 
   private:
     friend class JackProcessor; // Must not access private data above this line.
@@ -149,9 +159,10 @@ class JackProcessor
   protected:
     JackInput m_input;
     JackOutput m_output;
+    int m_sequence_number;              // A sequence number that is incremented every time process is called.
 
   public:
-    JackProcessor() : m_input(this), m_output(this) { }
+    JackProcessor() : m_input(this), m_output(this), m_sequence_number(0) { }
     ~JackProcessor() { m_input.disown(); m_output.disown(); }
 
     // Connect processor to output.
@@ -161,8 +172,27 @@ class JackProcessor
       return processor.m_input;
     }
 
+    friend void operator<<(JackProcessor& processor, JackOutput& output)
+    {
+      processor.m_input.connect_to(output);
+    }
+
+    // Connect processor to processor.
+    friend JackInput& operator<<(JackProcessor& processor1, JackProcessor& processor2)
+    {
+      processor1.m_input.connect_to(processor2.m_output);
+      return processor2.m_input;
+    }
+
+    virtual bool provides_input_buffer() const { return false; }
+    virtual bool provides_output_buffer() const { return false; }
+
     // Read input, process, write output.
-    virtual void process() = 0;
+    virtual void process(int sequence_number) = 0;
 };
+
+bool JackInput::provides_buffer() const { return m_in || (m_owner && m_owner->provides_input_buffer()); }
+bool JackOutput::provides_buffer() const { return m_out || (m_owner && m_owner->provides_output_buffer()); }
+void JackOutput::update_buffer_ptr(jack_default_audio_sample_t* ptr) { ASSERT(m_owner && m_owner->provides_output_buffer()); m_out = ptr; }
 
 #endif // JACK_PROCESSOR_H

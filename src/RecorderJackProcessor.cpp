@@ -1,6 +1,6 @@
 /**
- * /file MemcpyJackProcessor.cpp
- * /brief Implementation of class MemcpyJackProcessor.
+ * /file RecorderJackProcessor.cpp
+ * /brief Implementation of class RecorderJackProcessor.
  *
  * Copyright (C) 2015 Aleric Inglewood.
  *
@@ -20,18 +20,36 @@
 
 #include "sys.h"
 
-#include "MemcpyJackProcessor.h"
+#include "RecorderJackProcessor.h"
 
-void MemcpyJackProcessor::process(int sequence_number)
+void RecorderJackProcessor::process(int sequence_number)
 {
   if (m_sequence_number == sequence_number)
     return;
   m_sequence_number = sequence_number;
 
-  jack_default_audio_sample_t const* in = m_input.chunk_ptr();
-  jack_default_audio_sample_t* out = m_output.chunk_ptr();
-  jack_nframes_t const nframes = m_input.nframes();
-  ASSERT(nframes == m_output.nframes());
+  // The output buffer is dynamically changed therefore everyone should point to us.
+  ASSERT(m_output.connected_input());
 
-  std::memcpy(out, in, nframes * sizeof(jack_default_audio_sample_t));
+  jack_default_audio_sample_t* ptr = m_recording_buffer.read();
+  if (!ptr)
+  {
+    throw RecorderEmpty();
+  }
+  m_output.update_buffer_ptr(ptr);
+}
+
+void RecorderJackProcessor::buffer_size_changed(jack_nframes_t nframes)
+{
+  m_recording_buffer.buffer_size_changed(nframes);
+}
+
+void RecorderJackProcessor::clear()
+{
+  m_recording_buffer.clear();
+}
+
+void RecorderJackProcessor::reset_readptr()
+{
+  m_recording_buffer.reset_readptr();
 }

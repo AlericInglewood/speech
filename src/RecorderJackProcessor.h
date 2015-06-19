@@ -1,6 +1,6 @@
 /**
- * \file FFTJackProcessor.h
- * \brief Declaration of FFTJackProcessor.
+ * \file RecorderJackProcessor.h
+ * \brief Declaration of RecorderJackProcessor.
  *
  * Copyright (C) 2015 Aleric Inglewood.
  *
@@ -18,29 +18,36 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FFT_JACK_PROCESSOR_H
-#define FFT_JACK_PROCESSOR_H
+#ifndef RECORDER_JACK_PROCESSOR_H
+#define RECORDER_JACK_PROCESSOR_H
 
 #include "JackProcessor.h"
-#include <complex>
-#include <fftw3.h>
+#include "JackFIFOBuffer.h"
+#include <exception>
 
-class FFTJackProcessor : public JackProcessor
+class RecorderEmpty : public std::exception
+{
+};
+
+class RecorderJackProcessor : public JackProcessor
 {
   private:
-    float* m_fftwf_real_array;
-    union {
-      fftwf_complex* m_fftwf_complex_array;
-      std::complex<float>* m_complex_array;
-    };
-    fftwf_plan m_r2c_plan;
-    fftwf_plan m_c2r_plan;
+    JackFIFOBuffer m_recording_buffer;
 
   public:
-    FFTJackProcessor();
+    RecorderJackProcessor(jack_client_t* client, double period) : m_recording_buffer(client, period) { }
+
+    void buffer_size_changed(jack_nframes_t nframes);
+    void clear();
+    void reset_readptr();
+
+  public:
+    // This object provides the buffers in process().
+    /*virtual*/ bool provides_input_buffer() const { return true; }
+    /*virtual*/ bool provides_output_buffer() const { return true; }
 
     // Read input, process, write output.
     /*virtual*/ void process(int sequence_number);
 };
 
-#endif // FFT_JACK_PROCESSOR_H
+#endif // RECORDER_JACK_PROCESSOR_H

@@ -1,6 +1,6 @@
 /**
- * \file JackCrossfader.h
- * \brief Declaration of JackCrossfader.
+ * \file JackSwitch.h
+ * \brief Declaration of JackSwitch.
  *
  * Copyright (C) 2015 Aleric Inglewood.
  *
@@ -18,8 +18,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef JACK_CROSSFADER_H
-#define JACK_CROSSFADER_H
+#ifndef JACK_SWITCH_H
+#define JACK_SWITCH_H
 
 #include "JackProcessor.h"
 
@@ -27,23 +27,23 @@
 #include "debug.h"
 
 // Crossfade between two inputs.
-class JackCrossfader : public JackProcessor
+class JackSwitch : public JackProcessor
 {
   protected:
     JackInput m_previous_input;
 
   public:
-    JackCrossfader() : m_previous_input(this) { }
-    ~JackCrossfader() { m_previous_input.disown(); }
+    JackSwitch() : m_previous_input(this) { }
+    ~JackSwitch() { m_previous_input.disown(); }
 
-    // Connect crossfader to input.
-    friend void operator<<(JackInput& input, JackCrossfader& crossfader)
+    // Connect switch to input.
+    friend void operator<<(JackInput& input, JackSwitch& jack_switch)
     { 
-      input.connect_to(crossfader.m_output);
+      input.connect_to(jack_switch.m_output);
     }
 
     // Read input, process, write output.
-    virtual void process() = 0;
+    /*virtual*/ void process(int sequence_number);
 };
 
-#endif // JACK_CROSSFADER_H
+#endif // JACK_SWITCH_H

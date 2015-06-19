@@ -1,6 +1,6 @@
 /**
- * \file FFTJackProcessor.h
- * \brief Declaration of FFTJackProcessor.
+ * \file FIFOBufferJackProcessor.h
+ * \brief Declaration of FIFOBufferJackProcessor.
  *
  * Copyright (C) 2015 Aleric Inglewood.
  *
@@ -18,29 +18,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FFT_JACK_PROCESSOR_H
-#define FFT_JACK_PROCESSOR_H
+#ifndef FIFO_BUFFER_JACK_PROCESSOR_H
+#define FIFO_BUFFER_JACK_PROCESSOR_H
 
 #include "JackProcessor.h"
-#include <complex>
-#include <fftw3.h>
 
-class FFTJackProcessor : public JackProcessor
+// This provides the output of our recording device.
+class FIFOBufferJackProcessor : public JackProcessor
 {
-  private:
-    float* m_fftwf_real_array;
-    union {
-      fftwf_complex* m_fftwf_complex_array;
-      std::complex<float>* m_complex_array;
-    };
-    fftwf_plan m_r2c_plan;
-    fftwf_plan m_c2r_plan;
-
   public:
-    FFTJackProcessor();
-
-    // Read input, process, write output.
-    /*virtual*/ void process(int sequence_number);
+    // Read from the buffer and write to the output.
+    virtual void process(int sequence_number) = 0;
 };
 
-#endif // FFT_JACK_PROCESSOR_H
+#endif // FIFO_BUFFER_JACK_PROCESSOR_H

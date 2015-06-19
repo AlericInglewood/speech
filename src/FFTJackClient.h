@@ -26,6 +26,9 @@
 #include "MemcpyJackProcessor.h"
 #include "FFTJackProcessor.h"
 #include "RecordingDeviceState.h"
+#include "JackSwitch.h"
+#include "SilenceJackProcessor.h"
+#include "RecorderJackProcessor.h"
 
 #include <fftw3.h>
 #include <atomic>
@@ -38,13 +41,16 @@ class FFTJackClient : public JackClient, public RecordingDeviceState
   protected:
     jack_nframes_t m_fft_buffer_size;
     int m_playback_state;
-    jack_default_audio_sample_t* m_silence_buffer;
-    jack_default_audio_sample_t* m_test_buffer;
-    JackFIFOBuffer m_recording_buffer;
+    int m_sequence_number;
     JackInput m_jack_server_input;
     JackOutput m_jack_server_output;
+    SilenceJackProcessor m_silence;
     MemcpyJackProcessor m_passthrough;
+    RecorderJackProcessor m_recorder;
     FFTJackProcessor m_fft_processor;
+    JackSwitch m_recording_switch;
+    JackSwitch m_test_switch;
+    JackSwitch m_output_switch;
 
     // Helper variables used during crossfading.
     jack_nframes_t m_crossfade_frame;

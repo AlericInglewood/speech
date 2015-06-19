@@ -29,7 +29,7 @@
 #include "utils/macros.h"
 
 FFTJackClient::FFTJackClient(char const* name, double period) : JackClient(name), RecordingDeviceState(passthrough),
-  m_fft_buffer_size(0), m_playback_state(0), m_silence_buffer(NULL), m_test_buffer(NULL), m_recording_buffer(m_client, period), m_crossfade_frame(-1)
+  m_fft_buffer_size(0), m_playback_state(0), m_sequence_number(0), m_recorder(m_client, period), m_crossfade_frame(-1)
 {
   // Set the size of the FFT buffer, in samples.
   set_fft_buffer_size(256);
@@ -48,28 +48,58 @@ int FFTJackClient::process(jack_default_audio_sample_t* left, jack_default_audio
 {
   DoutEntering(dc::notice, "FFTJackClient::process(" << left << ", " << right << ", " << nframes << ")");
 
+  // Starting a new process sequence
+  ++m_sequence_number;
+
   // Read the state bits.
   int statebits = get_state();
-
-#if 0
-  int playback_state = statebits & playback_mask;
-  bool const crossfading = m_crossfade_frame != jack_nframes_t(-1);
-  bool const direct_or_playback_to_input = is_direct_or_playback_to_input(statebits, crossfading);
-  bool const recording_from_test = statebits & record_output;
-  bool const perform_test = direct_or_playback_to_input || recording_from_test;                         // Whether or not we need to perform the test.
-  bool const test_is_buffered = direct_or_playback_to_input && (crossfading || recording_from_test);    // The output of test must be written to the output
-#endif
 
   m_jack_server_input.assign_external_buffer(right, nframes);      // right is the input from the jack server perspective.
   m_jack_server_output.assign_external_buffer(left, nframes);
 
   if (statebits != m_last_state)
   {
+    if (AI_UNLIKELY(statebits & commands_mask))
+    {
+      if ((statebits & clear_buffer))
+      {
+        m_recorder.clear();
+      }
+      if ((statebits & playback_reset))
+      {
+        m_recorder.reset_readptr();
+      }
+      clear_and_set(commands_mask, 0);
+    }
+
+    bool const direct_or_playback_to_input = (statebits & direct) || (statebits & (playback | playback_to_input)) == (playback | playback_to_input);
+
 #if DEBUG_PROCESS
     Debug(if (!dc::notice.is_on()) dc::notice.on());
     assert(libcwd::channels::dc::notice.is_on());
 #endif // DEBUG_PROCESS
-    m_jack_server_input << m_passthrough << m_jack_server_output;
+
+    if ((statebits & record_input))
+      m_recording_switch << m_jack_server_output;
+    else if ((statebits & record_output))
+      m_recording_switch << m_fft_processor;
+    else
+      m_recording_switch << m_silence;
+
+    if ((statebits & playback_to_input))
+      m_test_switch << m_recorder;
+    else
+      m_test_switch << m_jack_server_output;
+
+    if (direct_or_playback_to_input)
+      m_output_switch << m_fft_processor;
+    else if ((statebits & playback))
+      m_output_switch << m_recorder;
+    else if ((statebits & muted))
+      m_output_switch << m_silence;
+    else
+      m_output_switch << m_jack_server_output;
+
   }
 #if DEBUG_PROCESS
   else
@@ -79,7 +109,10 @@ int FFTJackClient::process(jack_default_audio_sample_t* left, jack_default_audio
 #endif // DEBUG_PROCESS
   m_last_state = statebits;
 
-  m_jack_server_input.process();
+  if ((statebits & record_mask) || !m_recording_switch.is_crossfading())
+    m_recorder.something(m_sequence_number);
+
+  m_jack_server_input.process(m_sequence_number);
 
 #if 0
   bool const perform_recording = statebits & record_input;    // Start with the recording stage? Start with the test (if any) unless we're recording directly from the input.
@@ -342,18 +375,8 @@ void FFTJackClient::buffer_size_changed()
     set_fft_buffer_size(m_input_buffer_size);
   }
 
-  // Clean up old buffers.
-  if (m_silence_buffer)
-    fftwf_free(m_silence_buffer);
-  if (m_test_buffer)
-    fftwf_free(m_test_buffer);
-
   // Make sure that our internal buffers are large enough.
-  m_silence_buffer = fftwf_alloc_real(m_input_buffer_size);
-  m_test_buffer = fftwf_alloc_real(m_input_buffer_size);
-  // Clear the silence buffer with zeroes.
-  std::memset(m_silence_buffer, 0, sizeof(jack_default_audio_sample_t) * m_input_buffer_size);
-
-  m_recording_buffer.buffer_size_changed(m_input_buffer_size);
+  m_silence.buffer_size_changed(m_input_buffer_size);
+  m_recorder.buffer_size_changed(m_input_buffer_size);
   JackChunkAllocator::instance().buffer_size_changed(m_input_buffer_size);
 }

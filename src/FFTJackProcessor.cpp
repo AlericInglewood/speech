@@ -34,8 +34,12 @@ FFTJackProcessor::FFTJackProcessor()
   Dout(dc::notice, "Done()");
 }
 
-void FFTJackProcessor::process()
+void FFTJackProcessor::process(int sequence_number)
 {
+  if (m_sequence_number == sequence_number)
+    return;
+  m_sequence_number = sequence_number;
+
   jack_default_audio_sample_t const* test_in = m_input.chunk_ptr();
   jack_default_audio_sample_t* test_out = m_output.chunk_ptr();
   jack_nframes_t const nframes = m_input.nframes();

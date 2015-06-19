@@ -1,6 +1,6 @@
 /**
- * \file FFTJackProcessor.h
- * \brief Declaration of FFTJackProcessor.
+ * /file FIFOBufferJackProcessor.cpp
+ * /brief Implementation of class FIFOBufferJackProcessor.
  *
  * Copyright (C) 2015 Aleric Inglewood.
  *
@@ -18,29 +18,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FFT_JACK_PROCESSOR_H
-#define FFT_JACK_PROCESSOR_H
+#include "sys.h"
 
-#include "JackProcessor.h"
-#include <complex>
-#include <fftw3.h>
+#include "FIFOBufferJackProcessor.h"
+#include "debug.h"
 
-class FFTJackProcessor : public JackProcessor
+void FIFOBufferJackProcessor::process(int sequence_number)
 {
-  private:
-    float* m_fftwf_real_array;
-    union {
-      fftwf_complex* m_fftwf_complex_array;
-      std::complex<float>* m_complex_array;
-    };
-    fftwf_plan m_r2c_plan;
-    fftwf_plan m_c2r_plan;
+  if (m_sequence_number == sequence_number)
+    return;
+  m_sequence_number = sequence_number;
 
-  public:
-    FFTJackProcessor();
-
-    // Read input, process, write output.
-    /*virtual*/ void process(int sequence_number);
-};
-
-#endif // FFT_JACK_PROCESSOR_H
+  DoutEntering(dc::notice, "FIFOBufferJackProcessor::process(" << sequence_number << ")");
+}

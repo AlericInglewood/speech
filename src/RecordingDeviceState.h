@@ -77,14 +77,6 @@ class RecordingDeviceState
     bool is_playing() { return get_state() & playback; }
 
   protected:
-    // Returns true when test output is being played to the output jack (including crossfading when set).
-    static bool is_direct_or_playback_to_input(int statebits, bool crossfading)
-    {
-      return (statebits & direct) || (statebits & (playback | playback_to_input)) == (playback | playback_to_input) ||
-        (crossfading && ((statebits & direct << prev_mask_shift) ||
-                         (statebits & (playback | playback_to_input) << prev_mask_shift) == (playback | playback_to_input) << prev_mask_shift));
-    }
-
     // Return true if we must play from the start when reaching the end of the playback buffer.
     static bool is_repeat(int statebits) { return statebits & playback_repeat; }
 

@@ -23,6 +23,7 @@
 #include "debug.h"
 #include "JackProcessor.h"
 #include "JackChunkAllocator.h"
+#include "RecorderJackProcessor.h"
 
 JackProcessor** connected_owner_ptr;
 
@@ -33,14 +34,14 @@ void JackInput::connect_to(JackOutput& output)
 #endif
 
   // I don't think that this needs to be supported. We add buffers on outputs except on the terminal JackProcessor.
-  ASSERT(!has_buffer() || !output.has_buffer());
+  ASSERT(!provides_buffer() || !output.provides_buffer());
 
-  if (!has_buffer() && !output.has_buffer())
+  if (!provides_buffer() && !output.provides_buffer())
   {
     output.create_buffer();
   }
 
-  if (has_buffer())
+  if (provides_buffer())
   {
     output.connect_to(this);
     if (!m_owner)
@@ -59,21 +60,21 @@ void JackInput::connect_to(JackOutput& output)
   }
 }
 
-void JackInput::process()
+void JackInput::process(int sequence_number)
 {
 #if DEBUG_PROCESS
-  DoutEntering(dc::notice, "JackInput::process() with this = " << (void*)this);
+  DoutEntering(dc::notice, "JackInput::process(" << sequence_number << ") with this = " << (void*)this);
 #endif
 
   // We are going to write to this buffer.
-  ASSERT(has_buffer());
+  ASSERT(provides_buffer());
 
   // This must be jack server input.
   ASSERT(!m_owner);
 
   // This had better be assigned.
   ASSERT(m_connected_owner);
-  m_connected_owner->process();
+  m_connected_owner->process(sequence_number);
 }
 
 void JackOutput::create_buffer()

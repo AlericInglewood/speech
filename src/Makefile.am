@@ -22,9 +22,12 @@ speech_SOURCES = \
         JackClient.cpp \
         JackPorts.cpp \
         JackProcessor.cpp \
-        JackCrossfader.cpp \
+        JackSwitch.cpp \
+        SilenceJackProcessor.cpp \
+        RecorderJackProcessor.cpp \
         MemcpyJackProcessor.cpp \
         FFTJackProcessor.cpp \
+        FIFOBufferJackProcessor.cpp \
         UIWindow.cpp \
         speech.cpp
 

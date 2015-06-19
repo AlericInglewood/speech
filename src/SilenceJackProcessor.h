@@ -1,6 +1,6 @@
 /**
- * /file JackCrossfader.cpp
- * /brief Implementation of class JackCrossfader.
+ * \file SilenceJackProcessor.h
+ * \brief Declaration of SilenceJackProcessor.
  *
  * Copyright (C) 2015 Aleric Inglewood.
  *
@@ -18,12 +18,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "sys.h"
+#ifndef SILENCE_JACK_PROCESSOR_H
+#define SILENCE_JACK_PROCESSOR_H
 
-#include "JackCrossfader.h"
-#include "debug.h"
+#include "JackProcessor.h"
 
-void JackCrossfader::process()
+class SilenceJackProcessor : public JackProcessor
 {
-  DoutEntering(dc::notice, "JackCrossfader::process()");
-}
+  public:
+    // Read input, process, write output.
+    /*virtual*/ void process(int sequence_number);
+};
+
+#endif // SILENCE_JACK_PROCESSOR_H

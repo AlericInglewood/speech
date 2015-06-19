@@ -27,7 +27,7 @@ class MemcpyJackProcessor : public JackProcessor
 {
   public:
     // Read input, process, write output.
-    /*virtual*/ void process();
+    /*virtual*/ void process(int sequence_number);
 };
 
 #endif // MEMCPY_JACK_PROCESSOR_H
