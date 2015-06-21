@@ -40,7 +40,7 @@ class FFTJackProcessor : public JackProcessor
     FFTJackProcessor();
 
     // Read input, process, write output.
-    /*virtual*/ void process(int sequence_number);
+    /*virtual*/ void generate_output(int sequence_number);
 };
 
 #endif // FFT_JACK_PROCESSOR_H

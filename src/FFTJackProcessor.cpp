@@ -34,7 +34,7 @@ FFTJackProcessor::FFTJackProcessor()
   Dout(dc::notice, "Done()");
 }
 
-void FFTJackProcessor::process(int sequence_number)
+void FFTJackProcessor::generate_output(int sequence_number)
 {
   if (m_sequence_number == sequence_number)
     return;

@@ -22,7 +22,7 @@
 
 #include "MemcpyJackProcessor.h"
 
-void MemcpyJackProcessor::process(int sequence_number)
+void MemcpyJackProcessor::generate_output(int sequence_number)
 {
   if (m_sequence_number == sequence_number)
     return;

@@ -23,11 +23,11 @@
 #include "FIFOBufferJackProcessor.h"
 #include "debug.h"
 
-void FIFOBufferJackProcessor::process(int sequence_number)
+void FIFOBufferJackProcessor::generate_output(int sequence_number)
 {
   if (m_sequence_number == sequence_number)
     return;
   m_sequence_number = sequence_number;
 
-  DoutEntering(dc::notice, "FIFOBufferJackProcessor::process(" << sequence_number << ")");
+  DoutEntering(dc::notice, "FIFOBufferJackProcessor::generate_output(" << sequence_number << ")");
 }

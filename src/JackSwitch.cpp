@@ -23,11 +23,11 @@
 #include "JackSwitch.h"
 #include "debug.h"
 
-void JackSwitch::process(int sequence_number)
+void JackSwitch::generate_output(int sequence_number)
 {
   if (m_sequence_number == sequence_number)
     return;
   m_sequence_number = sequence_number;
 
-  DoutEntering(dc::notice, "JackSwitch::process(" << sequence_number << ")");
+  DoutEntering(dc::notice, "JackSwitch::generate_output(" << sequence_number << ")");
 }

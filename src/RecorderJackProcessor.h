@@ -46,8 +46,10 @@ class RecorderJackProcessor : public JackProcessor
     /*virtual*/ bool provides_input_buffer() const { return true; }
     /*virtual*/ bool provides_output_buffer() const { return true; }
 
+    /*virtual*/ void fill_input_buffer(int sequence_number);
+
     // Read input, process, write output.
-    /*virtual*/ void process(int sequence_number);
+    /*virtual*/ void generate_output(int sequence_number);
 };
 
 #endif // RECORDER_JACK_PROCESSOR_H

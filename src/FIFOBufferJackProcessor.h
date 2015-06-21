@@ -28,7 +28,7 @@ class FIFOBufferJackProcessor : public JackProcessor
 {
   public:
     // Read from the buffer and write to the output.
-    virtual void process(int sequence_number) = 0;
+    virtual void generate_output(int sequence_number) = 0;
 };
 
 #endif // FIFO_BUFFER_JACK_PROCESSOR_H

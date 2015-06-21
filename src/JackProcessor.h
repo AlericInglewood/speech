@@ -62,8 +62,8 @@ class JackInput
       m_chunk_size = nframes;
     }
 
-    // Process the whole chain up till and including this output.
-    void process(int sequence_number);
+    // Fill buffer.
+    void fill(int sequence_number);
 
     // Accessors to underlaying buffer used by JackProcessor derived classes.
     inline jack_default_audio_sample_t* chunk_ptr() const;
@@ -187,8 +187,11 @@ class JackProcessor
     virtual bool provides_input_buffer() const { return false; }
     virtual bool provides_output_buffer() const { return false; }
 
+    // Fill input buffer.
+    virtual void fill_input_buffer(int sequence_number) { m_input.fill(sequence_number); }
+
     // Read input, process, write output.
-    virtual void process(int sequence_number) = 0;
+    virtual void generate_output(int sequence_number) = 0;
 };
 
 bool JackInput::provides_buffer() const { return m_in || (m_owner && m_owner->provides_input_buffer()); }

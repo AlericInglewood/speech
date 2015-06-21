@@ -43,7 +43,7 @@ class JackSwitch : public JackProcessor
     }
 
     // Read input, process, write output.
-    /*virtual*/ void process(int sequence_number);
+    /*virtual*/ void generate_output(int sequence_number);
 };
 
 #endif // JACK_SWITCH_H

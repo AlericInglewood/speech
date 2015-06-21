@@ -22,7 +22,21 @@
 
 #include "RecorderJackProcessor.h"
 
-void RecorderJackProcessor::process(int sequence_number)
+void RecorderJackProcessor::fill_input_buffer(int sequence_number)
+{
+  if (m_sequence_number == sequence_number)
+    return;
+  m_sequence_number = sequence_number;
+
+  ASSERT(m_input.connected_output());
+
+  if (!m_recording_buffer.push(m_input.connected_output()))
+  {
+    throw RecorderFull();
+  }
+}
+
+void RecorderJackProcessor::generate_output(int sequence_number)
 {
   if (m_sequence_number == sequence_number)
     return;

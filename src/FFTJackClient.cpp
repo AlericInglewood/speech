@@ -110,9 +110,9 @@ int FFTJackClient::process(jack_default_audio_sample_t* left, jack_default_audio
   m_last_state = statebits;
 
   if ((statebits & record_mask) || !m_recording_switch.is_crossfading())
-    m_recorder.something(m_sequence_number);
+    m_recorder.fill_input_buffer(m_sequence_number);
 
-  m_jack_server_input.process(m_sequence_number);
+  m_jack_server_input.fill(m_sequence_number);
 
 #if 0
   bool const perform_recording = statebits & record_input;    // Start with the recording stage? Start with the test (if any) unless we're recording directly from the input.

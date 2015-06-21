@@ -60,21 +60,19 @@ void JackInput::connect_to(JackOutput& output)
   }
 }
 
-void JackInput::process(int sequence_number)
+void JackInput::fill(int sequence_number)
 {
 #if DEBUG_PROCESS
-  DoutEntering(dc::notice, "JackInput::process(" << sequence_number << ") with this = " << (void*)this);
+  DoutEntering(dc::notice, "JackInput::fill(" << sequence_number << ") with this = " << (void*)this);
 #endif
 
   // We are going to write to this buffer.
   ASSERT(provides_buffer());
 
-  // This must be jack server input.
-  ASSERT(!m_owner);
+  ASSERT(m_connected_owner || !m_owner);
 
-  // This had better be assigned.
-  ASSERT(m_connected_owner);
-  m_connected_owner->process(sequence_number);
+  if (m_connected_owner)
+    m_connected_owner->generate_output(sequence_number);
 }
 
 void JackOutput::create_buffer()
