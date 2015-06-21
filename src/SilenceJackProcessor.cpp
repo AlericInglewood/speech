@@ -1,6 +1,6 @@
 /**
- * /file MemcpyJackProcessor.cpp
- * /brief Implementation of class MemcpyJackProcessor.
+ * /file SilenceJackProcessor.cpp
+ * /brief Implementation of class SilenceJackProcessor.
  *
  * Copyright (C) 2015 Aleric Inglewood.
  *
@@ -20,18 +20,16 @@
 
 #include "sys.h"
 
-#include "MemcpyJackProcessor.h"
+#include "SilenceJackProcessor.h"
 
-void MemcpyJackProcessor::generate_output(int sequence_number)
+void SilenceJackProcessor::generate_output(int sequence_number)
 {
   if (m_sequence_number == sequence_number)
     return;
   m_sequence_number = sequence_number;
 
-  jack_default_audio_sample_t const* in = m_input.chunk_ptr();
   jack_default_audio_sample_t* out = m_output.chunk_ptr();
-  jack_nframes_t const nframes = m_input.nframes();
-  ASSERT(nframes == m_output.nframes());
+  jack_nframes_t const nframes = m_output.nframes();
 
-  std::memcpy(out, in, nframes * sizeof(jack_default_audio_sample_t));
+  std::memset(out, 0, nframes * sizeof(jack_default_audio_sample_t));
 }

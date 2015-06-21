@@ -109,7 +109,7 @@ int FFTJackClient::process(jack_default_audio_sample_t* left, jack_default_audio
 #endif // DEBUG_PROCESS
   m_last_state = statebits;
 
-  if ((statebits & record_mask) || !m_recording_switch.is_crossfading())
+  if ((statebits & record_mask) || m_recording_switch.is_crossfading()) // (Still) recording?
     m_recorder.fill_input_buffer(m_sequence_number);
 
   m_jack_server_input.fill(m_sequence_number);
@@ -376,7 +376,6 @@ void FFTJackClient::buffer_size_changed()
   }
 
   // Make sure that our internal buffers are large enough.
-  m_silence.buffer_size_changed(m_input_buffer_size);
   m_recorder.buffer_size_changed(m_input_buffer_size);
   JackChunkAllocator::instance().buffer_size_changed(m_input_buffer_size);
 }

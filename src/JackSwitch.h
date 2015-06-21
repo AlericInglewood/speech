@@ -36,6 +36,8 @@ class JackSwitch : public JackProcessor
     JackSwitch() : m_previous_input(this) { }
     ~JackSwitch() { m_previous_input.disown(); }
 
+    bool is_crossfading() const { return false; }       // FIXME
+
     // Connect switch to input.
     friend void operator<<(JackInput& input, JackSwitch& jack_switch)
     { 

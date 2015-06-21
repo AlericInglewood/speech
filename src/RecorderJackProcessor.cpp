@@ -30,10 +30,12 @@ void RecorderJackProcessor::fill_input_buffer(int sequence_number)
 
   ASSERT(m_input.connected_output());
 
+#if 0 // FIXME
   if (!m_recording_buffer.push(m_input.connected_output()))
   {
     throw RecorderFull();
   }
+#endif
 }
 
 void RecorderJackProcessor::generate_output(int sequence_number)
