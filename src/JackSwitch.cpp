@@ -23,11 +23,9 @@
 #include "JackSwitch.h"
 #include "debug.h"
 
-void JackSwitch::generate_output(int sequence_number)
+#if 0
+void JackSwitch::generate_output()
 {
-  if (m_sequence_number == sequence_number)
-    return;
-  m_sequence_number = sequence_number;
-
-  DoutEntering(dc::notice, "JackSwitch::generate_output(" << sequence_number << ")");
+  DoutEntering(dc::notice, "JackSwitch::generate_output() NEEDS IMPLEMENTATION");
 }
+#endif

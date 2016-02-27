@@ -27,25 +27,29 @@
 #include "debug.h"
 
 // Crossfade between two inputs.
-class JackSwitch : public JackProcessor
+class JackSwitch
 {
   protected:
-    JackInput m_previous_input;
+    JackInput& m_input;         // A reference to the input that must be switched.
 
   public:
-    JackSwitch() : m_previous_input(this) { }
-    ~JackSwitch() { m_previous_input.disown(); }
+    JackSwitch(JackInput& input) : m_input(input) { }
+    JackSwitch(JackProcessor& jack_processor) : m_input(jack_processor) { }
 
+  public:
     bool is_crossfading() const { return false; }       // FIXME
 
-    // Connect switch to input.
-    friend void operator<<(JackInput& input, JackSwitch& jack_switch)
-    { 
-      input.connect_to(jack_switch.m_output);
+    // Switch input to output of jack_processor.
+    friend void operator<<(JackSwitch& jack_switch, JackProcessor& jack_processor)
+    {
+      jack_switch.m_input << jack_processor;
     }
 
-    // Read input, process, write output.
-    /*virtual*/ void generate_output(int sequence_number);
+    // Switch input to output.
+    friend void operator<<(JackSwitch& jack_switch, JackOutput& output)
+    {
+      jack_switch.m_input << output;
+    }
 };
 
 #endif // JACK_SWITCH_H

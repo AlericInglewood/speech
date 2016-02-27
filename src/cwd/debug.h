@@ -35,7 +35,7 @@
 #define AllocTag2(p, desc)
 #define AllocTag_dynamic_description(p, x)
 #define AllocTag(p, x)
-#define Debug(x)
+#define Debug(x) do { } while(0)
 #define Dout(a, b)
 #define DoutEntering(a, b)
 #define DoutFatal(a, b) LibcwDoutFatal(::std, , a, b)
@@ -57,6 +57,9 @@
 
 /// @endcond
 
+#define DEBUG_ONLY(...)
+#define COMMA_DEBUG_ONLY(...)
+
 #include <cassert>
 #ifdef DEBUG
 #define ASSERT(x) assert(x)
@@ -68,6 +71,12 @@
 
 //! Assert \a x, if debugging is turned on.
 #define ASSERT(x) LIBCWD_ASSERT(x)
+
+//! Insert debug code, only when debugging.
+#define DEBUG_ONLY(...) __VA_ARGS__
+
+//! Insert a comma followed by debug code, only when debugging.
+#define COMMA_DEBUG_ONLY(...) , __VA_ARGS__
 
 #ifndef DEBUGCHANNELS
 //! @brief The namespace in which the \c dc namespace is declared.

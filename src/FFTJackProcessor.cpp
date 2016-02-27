@@ -21,8 +21,9 @@
 #include "sys.h"
 
 #include "FFTJackProcessor.h"
+#include <fftw3.h>
 
-FFTJackProcessor::FFTJackProcessor()
+FFTJackProcessor::FFTJackProcessor() DEBUG_ONLY(: JackProcessor("FFTJackProcessor"))
 {
   // Prepare FFTW.
   m_fftwf_real_array = fftwf_alloc_real(256);
@@ -34,16 +35,12 @@ FFTJackProcessor::FFTJackProcessor()
   Dout(dc::notice, "Done()");
 }
 
-void FFTJackProcessor::generate_output(int sequence_number)
+void FFTJackProcessor::generate_output()
 {
-  if (m_sequence_number == sequence_number)
-    return;
-  m_sequence_number = sequence_number;
-
-  jack_default_audio_sample_t const* test_in = m_input.chunk_ptr();
-  jack_default_audio_sample_t* test_out = m_output.chunk_ptr();
-  jack_nframes_t const nframes = m_input.nframes();
-  ASSERT(nframes == m_output.nframes());
+  jack_default_audio_sample_t const* test_in = this->JackInput::chunk_ptr();
+  jack_default_audio_sample_t* test_out = this->JackOutput::chunk_ptr();
+  jack_nframes_t const nframes = this->JackInput::nframes();
+  ASSERT(nframes == this->JackOutput::nframes());
 
   // Make sure the arrays are properly aligned.
   assert(fftwf_alignment_of(const_cast<jack_default_audio_sample_t*>(test_in)) == fftwf_alignment_of(m_fftwf_real_array));

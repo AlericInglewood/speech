@@ -17,8 +17,8 @@
   background-color: #eeeeee;
 }
 
-.recording_device_button:active,
-.recording_device_button:checked {
+recording_device_button:active /*,
+.recording_device_button:checked */{
   transition: 0ms;
   border-style: inset;          /* For a 3D effect; button now appears to be pressed. */
   /* I'd prefer to use darker(@bg_color, 0.93) and @bg_color instead of #d0d0d0 and #eeeeee, but @bg_color doesn't work! */

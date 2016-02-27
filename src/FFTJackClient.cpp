@@ -26,10 +26,14 @@
 #include "debug.h"
 #include "FFTJackClient.h"
 #include "JackProcessor.h"
+#include "JackChunkAllocator.h"
 #include "utils/macros.h"
 
 FFTJackClient::FFTJackClient(char const* name, double period) : JackClient(name), RecordingDeviceState(passthrough),
-  m_fft_buffer_size(0), m_playback_state(0), m_sequence_number(0), m_recorder(m_client, period), m_crossfade_frame(-1)
+  m_fft_buffer_size(0), m_playback_state(0), m_sequence_number(0),
+  m_recorder(m_client, period),
+  m_recording_switch(m_recorder), m_test_switch(m_fft_processor), m_output_switch(m_jack_server_input),
+  m_crossfade_frame(-1)
 {
   // Set the size of the FFT buffer, in samples.
   set_fft_buffer_size(256);
@@ -54,8 +58,8 @@ int FFTJackClient::process(jack_default_audio_sample_t* left, jack_default_audio
   // Read the state bits.
   int statebits = get_state();
 
-  m_jack_server_input.assign_external_buffer(right, nframes);      // right is the input from the jack server perspective.
-  m_jack_server_output.assign_external_buffer(left, nframes);
+  m_jack_server_input.initialize(right, nframes);      // right is the input from the jack server perspective.
+  m_jack_server_output.initialize(left, nframes);
 
   if (statebits != m_last_state)
   {
@@ -95,11 +99,10 @@ int FFTJackClient::process(jack_default_audio_sample_t* left, jack_default_audio
       m_output_switch << m_fft_processor;
     else if ((statebits & playback))
       m_output_switch << m_recorder;
-    else if ((statebits & muted))
-      m_output_switch << m_silence;
-    else
+    else if ((statebits & passthrough))
       m_output_switch << m_jack_server_output;
-
+    else
+      m_output_switch << m_silence;
   }
 #if DEBUG_PROCESS
   else
@@ -112,7 +115,7 @@ int FFTJackClient::process(jack_default_audio_sample_t* left, jack_default_audio
   if ((statebits & record_mask) || m_recording_switch.is_crossfading()) // (Still) recording?
     m_recorder.fill_input_buffer(m_sequence_number);
 
-  m_jack_server_input.fill(m_sequence_number);
+  m_jack_server_input.fill_input_buffer(m_sequence_number);
 
 #if 0
   bool const perform_recording = statebits & record_input;    // Start with the recording stage? Start with the test (if any) unless we're recording directly from the input.

@@ -23,12 +23,13 @@
 
 #include "JackClient.h"
 #include "JackFIFOBuffer.h"
-#include "MemcpyJackProcessor.h"
 #include "FFTJackProcessor.h"
 #include "RecordingDeviceState.h"
 #include "JackSwitch.h"
-#include "SilenceJackProcessor.h"
-#include "RecorderJackProcessor.h"
+#include "JackRecorder.h"
+#include "JackServerInput.h"
+#include "JackServerOutput.h"
+#include "JackSilenceOutput.h"
 
 #include <fftw3.h>
 #include <atomic>
@@ -42,12 +43,11 @@ class FFTJackClient : public JackClient, public RecordingDeviceState
     jack_nframes_t m_fft_buffer_size;
     int m_playback_state;
     int m_sequence_number;
-    JackInput m_jack_server_input;
-    JackOutput m_jack_server_output;
-    SilenceJackProcessor m_silence;
-    MemcpyJackProcessor m_passthrough;
-    RecorderJackProcessor m_recorder;
+    JackServerInput m_jack_server_input;
+    JackServerOutput m_jack_server_output;
+    JackRecorder m_recorder;
     FFTJackProcessor m_fft_processor;
+    JackSilenceOutput m_silence;
     JackSwitch m_recording_switch;
     JackSwitch m_test_switch;
     JackSwitch m_output_switch;

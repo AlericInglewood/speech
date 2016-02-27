@@ -1,8 +1,8 @@
 /**
- * \file SilenceJackProcessor.h
- * \brief Declaration of SilenceJackProcessor.
+ * \file JackSilenceOutput.h
+ * \brief Declaration of JackSilenceOutput.
  *
- * Copyright (C) 2015 Aleric Inglewood.
+ * Copyright (C) 2015, 2016 Aleric Inglewood.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published
@@ -18,16 +18,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SILENCE_JACK_PROCESSOR_H
-#define SILENCE_JACK_PROCESSOR_H
+#ifndef JACK_SILENCE_OUTPUT_H
+#define JACK_SILENCE_OUTPUT_H
 
-#include "JackProcessor.h"
+#include "JackOutput.h"
 
-class SilenceJackProcessor : public JackProcessor
+class JackSilenceOutput : public JackOutput
 {
   public:
-    // Read input, process, write output.
-    /*virtual*/ void generate_output(int sequence_number);
+    // Construct a JackOutput that fills its buffer with zeroes.
+    JackSilenceOutput() : JackOutput(DEBUG_ONLY("Silence")) { }
+
+  public:
+
+    /*virtual*/ void fill_output_buffer(int sequence_number);
+    /*virtual*/ api_type type() const;
+    /*virtual*/ void memcpy_output(jack_default_audio_sample_t* const) const;
 };
 
-#endif // SILENCE_JACK_PROCESSOR_H
+#endif // JACK_SILENCE_OUTPUT_H

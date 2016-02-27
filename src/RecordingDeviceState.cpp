@@ -33,10 +33,10 @@
 //              |        `-o playback_to_input        | `--------------------------o
 //              |           \        .--------------. | direct/playback_to_input    \                .
 //        in o--+--------o   o--->---|     Test     |-+-------------------------o    \ OUTPUT
-//              |   direct    TEST   `--------------'                      muted      o----------o out
-//              |                                              m_silence >------o
-//              |                                                       passthrough
-//              `---------------->-------------------------------------------------o
+//              |   direct    TEST   `--------------'                passthrough      o----------o out
+//              `---------------->----------------------------------------------o
+//                                                                            muted
+//                                                                            none o
 //
 // The playback_mask bits determine the state of the TEST and OUTPUT switches:
 //

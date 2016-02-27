@@ -71,6 +71,24 @@ class JackFIFOBuffer
       return false; // Full queue.
     }
 
+    // Same as the above but writes zero's.
+    bool push_zero()
+    {
+      auto const current_head = m_head.load(std::memory_order_relaxed);
+      auto const next_head = increment(current_head);
+
+      if (next_head != m_tail.load(std::memory_order_acquire))  // Otherwise the buffer would appear empty after the m_head.store below,
+                                                                // and we'd be writing over data that possibly still needs to be read
+                                                                // by the consumer (that was returned by pop()).
+      {
+        std::memset(current_head, 0, m_nframes * sizeof(jack_default_audio_sample_t));
+        m_head.store(next_head, std::memory_order_release);
+        return true;
+      }
+
+      return false; // Full queue.
+    }
+
     //-------------------------------------------------------------------------
     // Consumer thread.
 
@@ -154,6 +172,9 @@ class JackFIFOBuffer
 
   public:
     virtual void buffer_size_changed(jack_nframes_t nframes);
+
+    // Accessor.
+    jack_nframes_t nframes() const { return m_nframes; }
 
   private:
     // Disallow copying.

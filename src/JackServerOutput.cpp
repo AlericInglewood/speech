@@ -1,8 +1,8 @@
 /**
- * /file SilenceJackProcessor.cpp
- * /brief Implementation of class SilenceJackProcessor.
+ * /file JackServerOutput.cpp
+ * /brief Implementation of class JackServerOutput.
  *
- * Copyright (C) 2015 Aleric Inglewood.
+ * Copyright (C) 2015, 2016 Aleric Inglewood.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published
@@ -19,17 +19,33 @@
  */
 
 #include "sys.h"
+#include "JackServerOutput.h"
 
-#include "SilenceJackProcessor.h"
-
-void SilenceJackProcessor::generate_output(int sequence_number)
+void JackServerOutput::fill_output_buffer(int sequence_number)
 {
   if (m_sequence_number == sequence_number)
     return;
   m_sequence_number = sequence_number;
 
-  jack_default_audio_sample_t* out = m_output.chunk_ptr();
-  jack_nframes_t const nframes = m_output.nframes();
+  handle_memcpys();
+}
 
-  std::memset(out, 0, nframes * sizeof(jack_default_audio_sample_t));
+api_type JackServerOutput::type() const
+{
+  return api_output_provided_buffer_memcpy;
+}
+
+jack_default_audio_sample_t* JackServerOutput::provided_output_buffer() const
+{
+  return m_chunk;
+}
+
+jack_nframes_t JackServerOutput::nframes_provided_output_buffer() const
+{
+  return m_chunk_size;
+}
+
+void JackServerOutput::memcpy_output(jack_default_audio_sample_t* chunk) const
+{
+  std::memcpy(chunk, m_chunk, m_chunk_size * sizeof(jack_default_audio_sample_t));
 }

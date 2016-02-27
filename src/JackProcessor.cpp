@@ -2,7 +2,7 @@
  * /file JackProcessor.cpp
  * /brief Implementation of class JackProcessor.
  *
- * Copyright (C) 2015 Aleric Inglewood.
+ * Copyright (C) 2015, 2016 Aleric Inglewood.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published
@@ -19,72 +19,35 @@
  */
 
 #include "sys.h"
-
-#include "debug.h"
 #include "JackProcessor.h"
-#include "JackChunkAllocator.h"
-#include "RecorderJackProcessor.h"
 
-JackProcessor** connected_owner_ptr;
-
-void JackInput::connect_to(JackOutput& output)
+api_type JackProcessor::type() const
 {
-#if DEBUG_PROCESS
-  DoutEntering(dc::notice, "JackInput::connect_to(" << (void*)&output << ") with this = " << (void*)this);
-#endif
-
-  // I don't think that this needs to be supported. We add buffers on outputs except on the terminal JackProcessor.
-  ASSERT(!provides_buffer() || !output.provides_buffer());
-
-  if (!provides_buffer() && !output.provides_buffer())
-  {
-    output.create_buffer();
-  }
-
-  if (provides_buffer())
-  {
-    output.connect_to(this);
-    if (!m_owner)
-    {
-      connected_owner_ptr = &m_connected_owner;
-      m_connected_owner = output.owner();
-      // Everthing but jack server input and output is a JackProcess,
-      // and we never connect the jack server input and output directly.
-      // This must be a jack server input being connected to a JackProcess.
-      ASSERT(m_connected_owner);
-    }
-  }
-  else
-  {
-    m_connected_output = &output;
-  }
+  // Assume as default that no buffers are provided by the processor.
+  return api_input_memcpy_zero | api_output_memcpy;
 }
 
-void JackInput::fill(int sequence_number)
+void JackProcessor::memcpy_input(jack_default_audio_sample_t const* chunk)
 {
-#if DEBUG_PROCESS
-  DoutEntering(dc::notice, "JackInput::fill(" << sequence_number << ") with this = " << (void*)this);
-#endif
-
-  // We are going to write to this buffer.
-  ASSERT(provides_buffer());
-
-  ASSERT(m_connected_owner || !m_owner);
-
-  if (m_connected_owner)
-    m_connected_owner->generate_output(sequence_number);
+  std::memcpy(m_connected_output->chunk_ptr(), chunk, m_connected_output->nframes() * sizeof(jack_default_audio_sample_t));
 }
 
-void JackOutput::create_buffer()
+void JackProcessor::zero_input()
 {
-  // All outputs are owned by JackProcess except the jack server output which already has a buffer.
-  ASSERT(m_owner);
-
-  m_out = static_cast<jack_default_audio_sample_t*>(JackChunkAllocator::instance().allocate());
-  m_chunk_size = JackChunkAllocator::instance().chunk_size();
+  std::memset(m_connected_output->chunk_ptr(), 0, m_connected_output->nframes() * sizeof(jack_default_audio_sample_t));
 }
 
-void JackOutput::connect_to(JackInput* input)
+void JackProcessor::memcpy_output(jack_default_audio_sample_t* chunk) const
 {
-  m_connected_input = input;
+  std::memcpy(chunk, m_chunk, m_chunk_size * sizeof(jack_default_audio_sample_t));
+}
+
+void JackProcessor::fill_output_buffer(int sequence_number)
+{
+  if (m_sequence_number == sequence_number)
+    return;
+  m_sequence_number = sequence_number;
+
+  generate_output();
+  handle_memcpys();
 }

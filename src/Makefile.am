@@ -20,14 +20,16 @@ speech_SOURCES = \
         FFTJackClient.cpp \
         JackChunkAllocator.cpp \
         JackClient.cpp \
+        JackInput.cpp \
+        JackOutput.cpp \
         JackPorts.cpp \
         JackProcessor.cpp \
+        JackRecorder.cpp \
+        JackServerInput.cpp \
+        JackServerOutput.cpp \
+        JackSilenceOutput.cpp \
         JackSwitch.cpp \
-        SilenceJackProcessor.cpp \
-        RecorderJackProcessor.cpp \
-        MemcpyJackProcessor.cpp \
         FFTJackProcessor.cpp \
-        FIFOBufferJackProcessor.cpp \
         UIWindow.cpp \
         speech.cpp
 

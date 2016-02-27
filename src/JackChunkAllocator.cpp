@@ -86,13 +86,12 @@ JackChunkAllocator::~JackChunkAllocator()
 {
   // Free all blocks.
   chunk const* block = m_start;
-  do
+  while(block)
   {
     chunk const* ptr = block;
     block = block->meta.next;
     fftwf_free(const_cast<chunk*>(ptr));
   }
-  while(block);
 }
 
 // This function sets m_free_chunk to point to the next, never used before, chunk after last_chunk.

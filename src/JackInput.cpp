@@ -1,8 +1,8 @@
 /**
- * \file FIFOBufferJackProcessor.h
- * \brief Declaration of FIFOBufferJackProcessor.
+ * /file JackInput.cpp
+ * /brief Implementation of class JackInput.
  *
- * Copyright (C) 2015 Aleric Inglewood.
+ * Copyright (C) 2015, 2016 Aleric Inglewood.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published
@@ -18,17 +18,5 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FIFO_BUFFER_JACK_PROCESSOR_H
-#define FIFO_BUFFER_JACK_PROCESSOR_H
-
-#include "JackProcessor.h"
-
-// This provides the output of our recording device.
-class FIFOBufferJackProcessor : public JackProcessor
-{
-  public:
-    // Read from the buffer and write to the output.
-    virtual void generate_output(int sequence_number) = 0;
-};
-
-#endif // FIFO_BUFFER_JACK_PROCESSOR_H
+#include "sys.h"
+#include "JackInput.h"

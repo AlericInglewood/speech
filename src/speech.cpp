@@ -89,7 +89,7 @@ int main(int argc, char* argv[])
     Glib::RefPtr<Gtk::Application> refApp = Gtk::Application::create(argc, argv, "com.alinoe.speech");
     UIWindow* ui_window = new UIWindow(glade_path, css_path, "window1", jack_client);
 
-    // Connect the ports. Note: you can't do this before the client is activated,
+    // Connect the ports. Note: you can't do this before the client is activated either,
     // because we can't allow connections to be made to clients that aren't running.
     jack_client.activate();
     jack_client.connect_ports();
