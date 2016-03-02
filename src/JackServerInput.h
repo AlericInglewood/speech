@@ -40,7 +40,8 @@ class JackServerInput : public JackInput
       m_chunk_size = nframes;
     }
 
-    /*virtual*/ api_type type() const;
+    /*virtual*/ api_type type() const { return api_input_provided_buffer_memcpy_zero; }
+
     /*virtual*/ jack_default_audio_sample_t* provided_input_buffer() const;
     /*virtual*/ jack_nframes_t nframes_provided_input_buffer() const;
     /*virtual*/ void memcpy_input(jack_default_audio_sample_t const* chunk);

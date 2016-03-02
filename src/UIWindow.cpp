@@ -166,10 +166,11 @@ void UIWindow::on_button_record_clicked()
     {
       // User clicked on active Record button. Undo this action.
       m_internal_set_active = true;
-      auto&& reset_internal_set_active = at_scope_end([this](){ m_internal_set_active = false; });
+      auto&& reset_internal_set_active = at_scope_end([this]{ m_internal_set_active = false; });
       m_button_record->set_active(true);
       // But restart recording.
       m_state.clear_and_set(0, RecordingDeviceState::clear_buffer);
+      reset_internal_set_active.now();
     }
     return;
   }
@@ -192,10 +193,11 @@ void UIWindow::on_button_play_clicked()
     {
       // User clicked on active Play button. Undo this action.
       m_internal_set_active = true;
-      auto&& reset_internal_set_active = at_scope_end([this](){ m_internal_set_active = false; });
+      auto&& reset_internal_set_active = at_scope_end([this]{ m_internal_set_active = false; });
       m_button_play->set_active(true);
       // But start from the beginning.
       m_state.clear_and_set(0, RecordingDeviceState::playback_reset);
+      reset_internal_set_active.now();
     }
     return;
   }
@@ -216,8 +218,9 @@ void UIWindow::stop_recording_if_any()
   if (m_button_record->get_active())
   {
     m_internal_set_active = true;
-    auto&& reset_internal_set_active = at_scope_end([this](){ m_internal_set_active = false; });
+    auto&& reset_internal_set_active = at_scope_end([this]{ m_internal_set_active = false; });
     m_button_record->set_active(false);
+    reset_internal_set_active.now();
   }
 }
 
@@ -227,8 +230,9 @@ void UIWindow::stop_playback_if_any()
   if (m_button_play->get_active())
   {
     m_internal_set_active = true;
-    auto&& reset_internal_set_active = at_scope_end([this](){ m_internal_set_active = false; });
+    auto&& reset_internal_set_active = at_scope_end([this]{ m_internal_set_active = false; });
     m_button_play->set_active(false);
+    reset_internal_set_active.now();
   }
 }
 

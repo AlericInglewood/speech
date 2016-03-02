@@ -25,6 +25,7 @@
 #include <atomic>
 #include <cstdint>
 #include <cstring>
+#include "debug.h"
 
 class JackFIFOBuffer
 {

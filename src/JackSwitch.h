@@ -50,6 +50,8 @@ class JackSwitch
     {
       jack_switch.m_input << output;
     }
+
+    void disconnect() { m_input.disconnect(); }
 };
 
 #endif // JACK_SWITCH_H

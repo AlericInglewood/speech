@@ -27,13 +27,16 @@ class JackSilenceOutput : public JackOutput
 {
   public:
     // Construct a JackOutput that fills its buffer with zeroes.
-    JackSilenceOutput() : JackOutput(DEBUG_ONLY("Silence")) { }
+    JackSilenceOutput();
+    ~JackSilenceOutput();
+
+    void buffer_size_changed(jack_nframes_t nframes);
 
   public:
+    /*virtual*/ api_type type() const { return api_output_provided_buffer; }
 
+    // JackOutput
     /*virtual*/ void fill_output_buffer(int sequence_number);
-    /*virtual*/ api_type type() const;
-    /*virtual*/ void memcpy_output(jack_default_audio_sample_t* const) const;
 };
 
 #endif // JACK_SILENCE_OUTPUT_H

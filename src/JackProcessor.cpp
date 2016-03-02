@@ -21,33 +21,12 @@
 #include "sys.h"
 #include "JackProcessor.h"
 
-api_type JackProcessor::type() const
-{
-  // Assume as default that no buffers are provided by the processor.
-  return api_input_memcpy_zero | api_output_memcpy;
-}
-
-void JackProcessor::memcpy_input(jack_default_audio_sample_t const* chunk)
-{
-  std::memcpy(m_connected_output->chunk_ptr(), chunk, m_connected_output->nframes() * sizeof(jack_default_audio_sample_t));
-}
-
-void JackProcessor::zero_input()
-{
-  std::memset(m_connected_output->chunk_ptr(), 0, m_connected_output->nframes() * sizeof(jack_default_audio_sample_t));
-}
-
-void JackProcessor::memcpy_output(jack_default_audio_sample_t* chunk) const
-{
-  std::memcpy(chunk, m_chunk, m_chunk_size * sizeof(jack_default_audio_sample_t));
-}
-
 void JackProcessor::fill_output_buffer(int sequence_number)
 {
   if (m_sequence_number == sequence_number)
     return;
   m_sequence_number = sequence_number;
-
+  fill_input_buffer(sequence_number);
   generate_output();
   handle_memcpys();
 }

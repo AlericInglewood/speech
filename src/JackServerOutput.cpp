@@ -26,26 +26,7 @@ void JackServerOutput::fill_output_buffer(int sequence_number)
   if (m_sequence_number == sequence_number)
     return;
   m_sequence_number = sequence_number;
-
+  // api_output_provided_buffer requires we set m_chunk and m_chunk_size in fill_output_buffer(),
+  // but those are already set by the call to initialize() when we get here.
   handle_memcpys();
-}
-
-api_type JackServerOutput::type() const
-{
-  return api_output_provided_buffer_memcpy;
-}
-
-jack_default_audio_sample_t* JackServerOutput::provided_output_buffer() const
-{
-  return m_chunk;
-}
-
-jack_nframes_t JackServerOutput::nframes_provided_output_buffer() const
-{
-  return m_chunk_size;
-}
-
-void JackServerOutput::memcpy_output(jack_default_audio_sample_t* chunk) const
-{
-  std::memcpy(chunk, m_chunk, m_chunk_size * sizeof(jack_default_audio_sample_t));
 }

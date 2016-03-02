@@ -38,11 +38,10 @@ class JackServerOutput : public JackOutput
       m_chunk_size = nframes;
     }
 
+    /*virtual*/ api_type type() const { return api_output_provided_buffer; }
+
+    // JackOutput
     /*virtual*/ void fill_output_buffer(int sequence_number);
-    /*virtual*/ api_type type() const;
-    /*virtual*/ jack_default_audio_sample_t* provided_output_buffer() const;
-    /*virtual*/ jack_nframes_t nframes_provided_output_buffer() const;
-    /*virtual*/ void memcpy_output(jack_default_audio_sample_t*) const;
 };
 
 #endif // JACK_SERVER_OUTPUT_H

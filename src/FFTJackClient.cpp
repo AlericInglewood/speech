@@ -52,275 +52,125 @@ int FFTJackClient::process(jack_default_audio_sample_t* left, jack_default_audio
 {
   DoutEntering(dc::notice, "FFTJackClient::process(" << left << ", " << right << ", " << nframes << ")");
 
-  // Starting a new process sequence
-  ++m_sequence_number;
-
-  // Read the state bits.
-  int statebits = get_state();
-
   m_jack_server_input.initialize(right, nframes);      // right is the input from the jack server perspective.
   m_jack_server_output.initialize(left, nframes);
 
-  if (statebits != m_last_state)
+  // So we can jump back on a routing error.
+  while (true)
   {
-    if (AI_UNLIKELY(statebits & commands_mask))
+    // Starting a new process sequence
+    ++m_sequence_number;
+
+    // Read the state bits.
+    int statebits = get_state();
+
+    if (statebits != m_last_state)
     {
-      if ((statebits & clear_buffer))
+      if (AI_UNLIKELY(statebits & commands_mask))
       {
-        m_recorder.clear();
+        if ((statebits & clear_buffer))
+        {
+          m_recorder.clear();
+        }
+        if ((statebits & playback_reset))
+        {
+          m_recorder.reset_readptr();
+        }
+        clear_and_set(commands_mask, 0);
       }
-      if ((statebits & playback_reset))
-      {
-        m_recorder.reset_readptr();
-      }
-      clear_and_set(commands_mask, 0);
-    }
+      m_recorder.set_repeat(is_repeat(statebits));
 
-    bool const direct_or_playback_to_input = (statebits & direct) || (statebits & (playback | playback_to_input)) == (playback | playback_to_input);
+      bool const actually_playback_to_input = (statebits & (playback | playback_to_input)) == (playback | playback_to_input);
+      bool const direct_or_playback_to_input = (statebits & direct) || actually_playback_to_input;
 
 #if DEBUG_PROCESS
-    Debug(if (!dc::notice.is_on()) dc::notice.on());
-    assert(libcwd::channels::dc::notice.is_on());
+      Debug(if (!dc::notice.is_on()) dc::notice.on());
+      assert(libcwd::channels::dc::notice.is_on());
 #endif // DEBUG_PROCESS
-
-    if ((statebits & record_input))
-      m_recording_switch << m_jack_server_output;
-    else if ((statebits & record_output))
-      m_recording_switch << m_fft_processor;
-    else
-      m_recording_switch << m_silence;
-
-    if ((statebits & playback_to_input))
-      m_test_switch << m_recorder;
-    else
-      m_test_switch << m_jack_server_output;
-
-    if (direct_or_playback_to_input)
-      m_output_switch << m_fft_processor;
-    else if ((statebits & playback))
-      m_output_switch << m_recorder;
-    else if ((statebits & passthrough))
-      m_output_switch << m_jack_server_output;
-    else
-      m_output_switch << m_silence;
-  }
-#if DEBUG_PROCESS
-  else
-  {
-    assert(!libcwd::channels::dc::notice.is_on());
-  }
-#endif // DEBUG_PROCESS
-  m_last_state = statebits;
-
-  if ((statebits & record_mask) || m_recording_switch.is_crossfading()) // (Still) recording?
-    m_recorder.fill_input_buffer(m_sequence_number);
-
-  m_jack_server_input.fill_input_buffer(m_sequence_number);
-
+      Dout(dc::notice, "-----------------------------------------------");
 #if 0
-  bool const perform_recording = statebits & record_input;    // Start with the recording stage? Start with the test (if any) unless we're recording directly from the input.
-
-#if DEBUG_PROCESS
-  DoutEntering(dc::notice, "FFTJackClient::process(" << in << ", " << out << ", " << nframes << ")");
-  assert(nframes == m_input_buffer_size);
-  Dout(dc::notice, "statebits = " << (void*)(long)statebits);
-#if 0
-  Dout(dc::notice, "playback_state = " << (void*)(long)playback_state <<
-                 "; crossfading = " << crossfading <<
-                 "; direct_or_playback_to_input = " << direct_or_playback_to_input <<
-                 "; recording_from_test = " << recording_from_test <<
-                 "; perform_test = " << perform_test <<
-                 "; test_is_buffered = " << test_is_buffered <<
-                 "; perform_recording = " << perform_recording);
+      Dout(dc::notice, "record_input = " << (statebits & record_input) << ", record_output = " << (statebits & record_output) <<
+                       ", playback_to_input = " << (statebits & playback_to_input) << ", direct_or_playback_to_input = " << (direct_or_playback_to_input) <<
+                       " (direct = " << (statebits & direct) <<
+                       "), playback = " << (statebits & playback) << ", passthrough = " << (statebits & passthrough));
 #endif
+
+      if ((statebits & record_input))
+        m_recording_switch << m_jack_server_output;
+      else if ((statebits & record_output))
+        m_recording_switch << m_fft_processor;
+      else
+        m_recording_switch.disconnect();
+
+      if (actually_playback_to_input)
+        m_test_switch << m_recorder;
+      else
+        m_test_switch << m_jack_server_output;
+
+      if (direct_or_playback_to_input)
+        m_output_switch << m_fft_processor;
+      else if ((statebits & playback))
+        m_output_switch << m_recorder;
+      else if ((statebits & passthrough))
+        m_output_switch << m_jack_server_output;
+      else
+        m_output_switch << m_silence;
+
+      m_last_state = statebits;
+    }
+#if DEBUG_PROCESS
+    else
+    {
+      assert(!libcwd::channels::dc::notice.is_on());
+    }
 #endif // DEBUG_PROCESS
-  // Make sure that jack passes a 16 bytes aligned buffer.
-  assert((reinterpret_cast<intptr_t>(in) & 0xf) == 0);
-  assert((reinterpret_cast<intptr_t>(out) & 0xf) == 0);
 
-  if (AI_UNLIKELY(statebits & commands_mask))
-  {
-    if ((statebits & clear_buffer))
+    try
     {
-      m_recording_buffer.clear();
-    }
-    if ((statebits & playback_reset))
-    {
-      m_recording_buffer.reset_readptr();
-    }
-    clear_and_set(commands_mask, 0);
-  }
-
-  jack_default_audio_sample_t* test_out;                // The buffer that the test output is to be written to (either 'out' or a temporary buffer).
-
-  // Perform the recording and test operation stages.
-  // The order of those two is determined by the initial value of perform_recording.
-  for (int stage = 0; stage < 2; ++stage)
-  {
-    if (perform_recording)
-    {
-      if ((statebits & record_mask))                    // Are we recording?
+      // Fill recorder.
+      if ((statebits & record_mask) || m_recording_switch.is_crossfading()) // (Still) recording?
       {
-#if DEBUG_PROCESS
-        Dout(dc::notice, "RECORDING");
-#endif // DEBUG_PROCESS
-        // Write the appropriate data to the recording buffer.
-        if (AI_UNLIKELY(!m_recording_buffer.push((statebits & record_input) ? in : test_out)))
-        {
-#if DEBUG_PROCESS
-          Debug(if (!dc::notice.is_on()) dc::notice.on());
-          Dout(dc::notice, "(RECORDING -->) BUFFER FULL!");
-#endif // DEBUG_PROCESS
-          // The recording buffer is full, stop recording.
-          statebits &= ~record_mask;
-          m_state.fetch_and(~record_mask);
-          m_wakeup_gui();
-        }
-#if DEBUG_PROCESS
-        else
-          Dout(dc::notice, "Wrote " << ((statebits & record_input) ? in : test_out) << " to recording buffer.");
-#endif // DEBUG_PROCESS
+        m_recorder.fill_input_buffer(m_sequence_number);
       }
-    }
-    else if (perform_test)                              // Are we testing?
-    {
-#if DEBUG_PROCESS
-      Dout(dc::notice, "PERFORMING TEST");
-#endif // DEBUG_PROCESS
-      // Determine the test source.
-      jack_default_audio_sample_t* test_in = (playback_state == playback && (statebits & playback_to_input)) ? m_recording_buffer.read() : in;
-      bool empty = !test_in;
-      if (AI_UNLIKELY(empty))
-      {
-        m_recording_buffer.reset_readptr();
-        if (is_repeat(statebits))
-        {
-          test_in = m_recording_buffer.read();
-          empty = !test_in;
-        }
-        if (empty)
-        {
-#if DEBUG_PROCESS
-          Debug(if (!dc::notice.is_on()) dc::notice.on());
-          Dout(dc::notice, "(PERFORMING TEST -->) BUFFER EMPTY!");
-#endif // DEBUG_PROCESS
-          // Recording buffer is empty, input silence.
-          test_in = m_silence_buffer;
-          m_state.fetch_and(~(playback_mask | (playback_mask << prev_mask_shift)));
-          m_wakeup_gui();
-        }
-      }
-#if DEBUG_PROCESS
-      else if (playback_state == playback && (statebits & playback_to_input))
-        Dout(dc::notice, "Read " << test_in << " from recording buffer.");
-#endif // DEBUG_PROCESS
 
-      m_fft_processor.process();
-    }
-    // Go to the other task.
-    perform_recording = !perform_recording;
-  }
+      // Fill JACK server.
+      m_jack_server_input.fill_input_buffer(m_sequence_number);
 
-  // If we're playing the test output and test isn't buffered then it was written to out and we're done.
-  if (direct_or_playback_to_input && !test_is_buffered)
-  {
-#if DEBUG_PROCESS
-    Dout(dc::notice, "DONE!");
-    Debug(if (dc::notice.is_on()) dc::notice.off());
-    assert(!libcwd::channels::dc::notice.is_on());
-#endif // DEBUG_PROCESS
-    return 0;
-  }
-
-  jack_default_audio_sample_t* current_source;
-  jack_default_audio_sample_t* prev_source = NULL;      // The default if we're not crossfading.
-  jack_default_audio_sample_t** source = &current_source;
-
-  for (int stage = 0; stage < 2; ++stage)
-  {
-#if DEBUG_PROCESS
-    Dout(dc::notice, "stage " << stage << "; playback_state is now " << playback_state);
-#endif // DEBUG_PROCESS
-    switch(playback_state)
-    {
-      case muted:
-        *source = crossfading ? m_silence_buffer : NULL; // No need for the silence buffer when we're not crossfading.
-        break;
-      case playback:
-        if (!(statebits & playback_to_input))
-        {
-#if DEBUG_PROCESS
-          Dout(dc::notice, "Playing back to output");
-#endif // DEBUG_PROCESS
-          *source = m_recording_buffer.read();
-          bool empty = !*source;
-          if (AI_UNLIKELY(empty))
-          {
-            m_recording_buffer.reset_readptr();
-            if (is_repeat(statebits))
-            {
-              *source = m_recording_buffer.read();
-              empty = !*source;
-            }
-            if (empty)
-            {
-#if DEBUG_PROCESS
-              Debug(if (!dc::notice.is_on()) dc::notice.on());
-              Dout(dc::notice, "(Playing back to output -->) BUFFER EMPTY!");
-#endif // DEBUG_PROCESS
-              // Recording buffer is empty, mute the output.
-              *source = m_silence_buffer;
-              m_state.fetch_and(~(playback_mask << ((source == &current_source) ? 0 : prev_mask_shift)));
-              m_wakeup_gui();
-            }
-          }
-#if DEBUG_PROCESS
-          else
-            Dout(dc::notice, "Read " << *source << " from recording buffer.");
-#endif // DEBUG_PROCESS
-          break;
-        }
-        /*fall-through*/
-      case direct:
-        *source = test_out;
-        break;
-      case passthrough:
-        *source = in;
-        break;
-      default:
-        DoutFatal(dc::core, "Unhandled playback_state " << playback_state);
-    }
-#if DEBUG_PROCESS
-    Dout(dc::notice, "Stage " << stage << ": source = " << *source);
-#endif // DEBUG_PROCESS
-    if (AI_LIKELY(!crossfading))        // Leave prev_source at NULL when we're not crossfading.
+      // Success.
       break;
-    // Next, determine the previous source.
-    source = &prev_source;
-    statebits >>= prev_mask_shift;
-    playback_state = statebits & playback_mask;
+    }
+    catch (RoutingError const&)
+    {
+      // Stop recording/playback if needed.
+      int const recorder_error = m_recorder.error();
+      if ((recorder_error & recorder_empty))
+      {
+#if DEBUG_PROCESS
+        Debug(if (!dc::notice.is_on()) dc::notice.on());
+        Dout(dc::notice, "(Playing back to output -->) BUFFER EMPTY!");
+#endif // DEBUG_PROCESS
+        // Recording buffer is empty, mute the output.
+        set_playback_state(statebits & (direct | passthrough));
+      }
+      if ((recorder_error & recorder_full))
+      {
+#if DEBUG_PROCESS
+        Debug(if (!dc::notice.is_on()) dc::notice.on());
+        Dout(dc::notice, "(RECORDING -->) BUFFER FULL!");
+#endif // DEBUG_PROCESS
+        // The recording buffer is full, stop recording.
+        statebits &= ~record_mask;
+        set_recording_state(0);
+      }
+      if (recorder_error)
+        m_wakeup_gui();
+
+      // Routing should be changed now.
+      ASSERT(get_state() != m_last_state);
+    }
   }
 
-  // Write source(s) to the output.
-
-  // If there is only one source then prev_source is NULL.
-  if (AI_LIKELY(current_source && !prev_source))
-  {
-#if DEBUG_PROCESS
-    Dout(dc::notice, "Copying " << current_source << " to out.");
-#endif // DEBUG_PROCESS
-    // Pass through.
-    std::memcpy(out, current_source, sizeof(jack_default_audio_sample_t) * nframes);
-  }
-  else if (!current_source)
-  {
-#if DEBUG_PROCESS
-    Dout(dc::notice, "Writing zeroes to out.");
-#endif // DEBUG_PROCESS
-    // Muted.
-    std::memset(out, 0, sizeof(jack_default_audio_sample_t) * nframes);
-  }
-  else
+#if 0
   {
 #if DEBUG_PROCESS
     Dout(dc::notice, "Crossfading from " << prev_source << " to " << current_source << "!");
@@ -381,4 +231,5 @@ void FFTJackClient::buffer_size_changed()
   // Make sure that our internal buffers are large enough.
   m_recorder.buffer_size_changed(m_input_buffer_size);
   JackChunkAllocator::instance().buffer_size_changed(m_input_buffer_size);
+  m_silence.buffer_size_changed(m_input_buffer_size);      // Must be called after JackChunkAllocator::buffer_size_changed.
 }

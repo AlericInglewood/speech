@@ -21,18 +21,14 @@
 #include "sys.h"
 
 #include "JackRecorder.h"
-
-api_type JackRecorder::type() const
-{
-  // We can only copy to the recorder.
-  return api_input_memcpy_zero | api_output_memcpy;
-}
+#include "utils/macros.h"
 
 void JackRecorder::memcpy_input(jack_default_audio_sample_t const* chunk)
 {
   if (!m_recording_buffer.push(chunk))
   {
-    throw RecorderFull();
+    m_error |= recorder_full;
+    throw RoutingError();
   }
 }
 
@@ -40,27 +36,8 @@ void JackRecorder::zero_input()
 {
   if (!m_recording_buffer.push_zero())
   {
-    throw RecorderFull();
-  }
-}
-
-void JackRecorder::memcpy_output(jack_default_audio_sample_t* chunk) const
-{
-  std::memcpy(chunk, m_chunk, m_chunk_size * sizeof(jack_default_audio_sample_t));
-}
-
-void JackRecorder::fill_input_buffer(int sequence_number)
-{
-  if (m_input_sequence_number == sequence_number)
-    return;
-  m_input_sequence_number = sequence_number;
-
-  ASSERT(m_connected_output);
-
-  m_connected_output->fill_output_buffer(sequence_number);
-  if (!m_recording_buffer.push(m_connected_output->chunk_ptr()))
-  {
-    throw RecorderFull();
+    m_error |= recorder_full;
+    throw RoutingError();
   }
 }
 
@@ -68,14 +45,25 @@ void JackRecorder::fill_output_buffer(int sequence_number)
 {
   if (m_output_sequence_number == sequence_number)
     return;
-  m_output_sequence_number = sequence_number;
-
-  jack_default_audio_sample_t* ptr = m_recording_buffer.read();
-  if (!ptr)
+  m_sequence_number = sequence_number;
+  // api_output_provided_buffer requires we set m_chunk and m_chunk_size in fill_output_buffer.
+  while (true)  // So we can use break and continue.
   {
-    throw RecorderEmpty();
+    m_chunk = m_recording_buffer.read();
+    if (AI_UNLIKELY(!m_chunk))
+    {
+      // We reached the end. Reset the read pointer to the beginning of the buffer.
+      reset_readptr();
+      if (!m_repeat || m_recording_buffer.empty())
+      {
+        m_error |= recorder_empty;
+        throw RoutingError();
+      }
+      // We get here at most once because after reset_readptr() either read() will succeed or m_recording_buffer.empty() will return true.
+      continue; // Try again.
+    }
+    m_chunk_size = m_recording_buffer.nframes();
+    break;      // Done.
   }
-  m_chunk = ptr;
   handle_memcpys();
 }
-

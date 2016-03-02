@@ -65,15 +65,14 @@ class JackProcessor : public JackInput, public JackOutput
     // Read input, process, write output.
     virtual void generate_output() = 0;
 
-    /*virtual*/ api_type type() const;
-
-    // JackInput
-    /*virtual*/ void memcpy_input(jack_default_audio_sample_t const* chunk);
-    /*virtual*/ void zero_input();
+    /*virtual*/ api_type type() const
+    {
+      // Assume as default that no buffers are provided by the processor.
+      return api_input_uses_output_buffer | api_output_uses_allocated_or_input_buffer;
+    }
 
     // JackOutput
     /*virtual*/ void fill_output_buffer(int sequence_number);
-    /*virtual*/ void memcpy_output(jack_default_audio_sample_t* chunk) const;
 };
 
 #endif // JACK_PROCESSOR_H

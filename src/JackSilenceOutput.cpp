@@ -20,7 +20,29 @@
 
 #include "sys.h"
 #include "JackSilenceOutput.h"
+#include "JackChunkAllocator.h"
 #include "JackInput.h"
+
+JackSilenceOutput::JackSilenceOutput() : JackOutput(DEBUG_ONLY("Silence"))
+{
+  // At this point buffer_size_changed() wasn't called yet, which means
+  // that JackChunkAllocator doesn't know the chunk size and we can't
+  // allocate anything yet.
+}
+
+JackSilenceOutput::~JackSilenceOutput()
+{
+  if (m_chunk)
+    JackChunkAllocator::instance().release(m_chunk);
+}
+
+void JackSilenceOutput::buffer_size_changed(jack_nframes_t nframes)
+{
+  // m_empty_chunk was already invalidated by calling JackChunkAllocator::buffer_size_changed.
+  ASSERT(JackChunkAllocator::instance().chunk_size() == nframes);
+  m_chunk = static_cast<jack_default_audio_sample_t*>(JackChunkAllocator::instance().allocate());
+  m_chunk_size = nframes;
+}
 
 void JackSilenceOutput::fill_output_buffer(int sequence_number)
 {
@@ -28,24 +50,13 @@ void JackSilenceOutput::fill_output_buffer(int sequence_number)
     return;
   m_sequence_number = sequence_number;
 
-  std::memset(m_chunk, 0, m_chunk_size * sizeof(jack_default_audio_sample_t));
+  // api_output_provided_buffer requires we set m_chunk and m_chunk_size in fill_output_buffer(),
+  // but those already set by the call to buffer_size_changed() when we get here.
+
   for (auto input : m_connected_inputs)
   {
-    if (uses_external_input_buffer(input.second))
-      break;
-    if (has_provided_input_buffer(input.second) &&
-        input.first->provided_input_buffer() == m_chunk)
+    if (!has_zero_input(input.second))
       break;
     input.first->zero_input();
   }
-}
-
-api_type JackSilenceOutput::type() const
-{
-  return api_output_memcpy;
-}
-
-void JackSilenceOutput::memcpy_output(jack_default_audio_sample_t* chunk) const
-{
-  std::memset(chunk, 0, m_chunk_size * sizeof(jack_default_audio_sample_t));
 }

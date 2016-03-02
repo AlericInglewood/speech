@@ -29,43 +29,33 @@ typedef int api_type;
 // None of the below api_input* API's.
 api_type const api_input_uses_output_buffer = 0;
 
+// virtual jack_default_audio_sample_t* provided_input_buffer() const
+api_type const api_input_provided_buffer = 1;
+
 // virtual void memcpy_input(jack_default_audio_sample_t const*)
 // virtual void zero_input()
-api_type const api_input_memcpy_zero = 1;
-
-// virtual jack_default_audio_sample_t* provided_input_buffer() const
-api_type const api_input_provided_buffer = 2;
-
+api_type const api_input_memcpy_zero = 2;       // This must be the largest api_input_* bit value.
 
 // JackOutput API
 
 // None of the below api_output* API's.
 api_type const api_output_uses_allocated_or_input_buffer = 0;
 
-// virtual void memcpy_output(jack_default_audio_sample_t*) const
-api_type const api_output_memcpy = 4;
-
-// virtual jack_default_audio_sample_t* provided_output_buffer() const
-api_type const api_output_provided_buffer = 8;
-
+// JackOutput::m_chunk is set in fill_output_buffer() and JackOutput::chunk_ptr() may be called to access it.
+api_type const api_output_provided_buffer = 4;
 
 // Combinations.
 
 api_type const api_input_any = api_input_provided_buffer | api_input_memcpy_zero;
-api_type const api_output_any = api_output_memcpy | api_output_provided_buffer;
+api_type const api_output_any = api_output_provided_buffer;
 
 api_type const api_input_provided_buffer_memcpy_zero = api_input_provided_buffer | api_input_memcpy_zero;
-api_type const api_output_provided_buffer_memcpy = api_output_provided_buffer | api_output_memcpy;
-
 
 // Easy access.
 
 inline bool has_memcpy_input(api_type mask) { return (mask & api_input_memcpy_zero); }
 inline bool has_zero_input(api_type mask) { return (mask & api_input_memcpy_zero); }
 inline bool has_provided_input_buffer(api_type mask) { return (mask & api_input_provided_buffer); }
-inline bool has_memcpy_output(api_type mask) { return (mask & api_output_memcpy); }
 inline bool has_provided_output_buffer(api_type mask) { return (mask & api_output_provided_buffer); }
-
-inline bool uses_external_input_buffer(api_type mask) { return !(mask & api_input_any); }
 
 #endif // API_TYPE_H

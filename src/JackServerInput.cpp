@@ -21,11 +21,6 @@
 #include "sys.h"
 #include "JackServerInput.h"
 
-api_type JackServerInput::type() const
-{
-  return api_input_provided_buffer_memcpy_zero;
-}
-
 jack_default_audio_sample_t* JackServerInput::provided_input_buffer() const
 {
   return m_chunk;

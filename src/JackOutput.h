@@ -91,7 +91,7 @@ class JackOutput
     void disconnect(JackInput& input);
 
     // The underlaying buffer to use; used by JackProcessor derived classes to write data to.
-    jack_default_audio_sample_t* chunk_ptr() const { ASSERT(m_chunk); return m_chunk; }
+    jack_default_audio_sample_t* chunk_ptr() const { return m_chunk; }
 
     // The size of the underlaying buffer.
     jack_nframes_t nframes() const { return m_chunk_size; }
@@ -108,23 +108,6 @@ class JackOutput
                                                         // is allocated (m_allocated is set) or is provided by a connected
                                                         // input that has api_provided_input_buffer.
     }
-
-    virtual jack_default_audio_sample_t* provided_output_buffer() const
-    {
-      ASSERT(false);                                    // This function should only be called when has_provided_output_buffer(type()) is true.
-      return NULL;
-    }
-
-    virtual jack_nframes_t nframes_provided_output_buffer() const
-    {
-      ASSERT(false);                                    // This function should only be called when has_provided_output_buffer(type()) is true.
-      return 0;
-    }
-
-    virtual void memcpy_output(jack_default_audio_sample_t*) const
-    {
-      ASSERT(false);                                    // This function should only be called when has_memcpy_output(type()) is true;
-    };
 };
 
 // Inline functions.

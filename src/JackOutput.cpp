@@ -53,14 +53,13 @@ void JackOutput::release_allocated_buffer(void)
 
 void JackOutput::connect(JackInput& input)
 {
-  DoutEntering(dc::notice, "JackOutput::connect([" << input.m_name << "]) with this = " << (void*)this << " [" << m_name << "].");
   JackOutput* connected_output = input.m_connected_output;
   if (connected_output == this)
-  {
-    Dout(dc::notice, "Already connected.");
     return;
-  }
-  else if (connected_output)
+
+  DoutEntering(dc::notice, "JackOutput::connect([" << input.m_name << "]) with this = " << (void*)this << " [" << m_name << "].");
+
+  if (connected_output)
   {
     // An input can only be connected to one output at a time.
     connected_output->disconnect(input);
@@ -85,19 +84,13 @@ void JackOutput::connect(JackInput& input)
   // Update m_chunk if needed.
   if (!need_allocation)
   {
-    if (has_provided_output_buffer(type()))
+    if (!has_provided_output_buffer(type())) // else m_chunk and m_chunk_size will be set by fill_output_buffer.
     {
-      m_chunk = provided_output_buffer();
-      m_chunk_size = nframes_provided_output_buffer();
-    }
-    else // has_provided_input_buffer(m_connected_inputs[0].second) must be true.
-    {
+      // has_provided_input_buffer(m_connected_inputs[0].second) must be true.
       m_chunk = m_connected_inputs[0].first->provided_input_buffer();
       m_chunk_size = m_connected_inputs[0].first->nframes_provided_input_buffer();
     }
   }
-
-  ASSERT(m_chunk);
 
   // Connect the input to this output.
   input.m_connected_output = this;
@@ -115,7 +108,6 @@ void JackOutput::disconnect(JackInput& input)
 
   // Fix allocation if needed.
   bool need_allocation = !has_provided_output_buffer(type()) && !m_connected_inputs.empty() && !has_provided_input_buffer(m_connected_inputs[0].second);
-  Dout(dc::notice, "m_connected_inputs.size() = " << m_connected_inputs.size() << "; need_allocation = " << need_allocation);
   if (need_allocation != m_allocated)
   {
     if (m_allocated)
@@ -127,20 +119,14 @@ void JackOutput::disconnect(JackInput& input)
   // Update m_chunk if needed.
   if (!need_allocation)
   {
-    if (has_provided_output_buffer(type()))
-    {
-      m_chunk = provided_output_buffer();
-      m_chunk_size = nframes_provided_output_buffer();
-    }
-    else if (!m_connected_inputs.empty())
+    if (!has_provided_output_buffer(type()) && // else m_chunk and m_chunk_size will be set by fill_output_buffer.
+        !m_connected_inputs.empty())
     {
       // has_provided_input_buffer(m_connected_inputs[0].second)) must be true.
       m_chunk = m_connected_inputs[0].first->provided_input_buffer();
       m_chunk_size = m_connected_inputs[0].first->nframes_provided_input_buffer();
     }
   }
-
-  ASSERT(m_chunk || m_connected_inputs.empty());
 
   // Disconnect the input from this output.
   input.m_connected_output = NULL;
@@ -160,6 +146,9 @@ void JackOutput::handle_memcpys()
   jack_default_audio_sample_t* const from = chunk_ptr();
   for (auto input : m_connected_inputs)
   {
+    // Because the inputs are stored in decreasing order (sorted by input type),
+    // all inputs with api_input_memcpy_zero set will be up front in the vector.
+    // Hence when we encounter one that doesn't has_memcpy_input, we can stop looking.
     if (!has_memcpy_input(input.second))
       break;
     if (has_provided_input_buffer(input.second) &&
