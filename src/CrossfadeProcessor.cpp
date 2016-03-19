@@ -23,10 +23,11 @@
 #include "JackSwitch.h"
 #include "JackRecorder.h"
 #include "Events.h"
+#include <cmath>
 
 CrossfadeProcessor::CrossfadeProcessor(JackSwitch& owner) :
     JackProcessor(owner.input().m_name + " \e[48;5;14mCrossfadeProcessor\e[0m"),
-    m_switch(owner), m_sample_rate(0)
+    m_switch(owner), m_active_inputs(0), m_sample_rate(0)
 {
 }
 
@@ -47,20 +48,21 @@ void CrossfadeProcessor::begin(JackOutput& new_source, JackOutput* prev_source)
   Debug(libcw_do.push_marker());
   Debug(libcw_do.marker().assign(": | "));
 
-  ASSERT(count_active_inputs() == 0);
+  ASSERT(m_active_inputs == 0);
   // Add the new source.
   ASSERT(!current_source());
   m_sources[0].m_crossfade_frame = 0;
   m_sources[0].m_direction = 1;
+  m_active_inputs = 1;
   new_source.connect(m_sources[0]);
   // Add the previous source, if any.
   if (prev_source)
   {
     m_sources[1].m_crossfade_frame = m_crossfade_nframes;
     m_sources[1].m_direction = -1;
+    ++m_active_inputs;
     prev_source->connect(m_sources[1]);
   }
-  ASSERT(count_active_inputs() == (prev_source ? 2 : 1));
 
   Debug(libcw_do.marker().assign(": ` "));
   Dout(dc::notice, "Leaving CrossfadeProcessor::begin.");
@@ -77,23 +79,29 @@ void CrossfadeProcessor::add(JackOutput& new_source)
   jack_nframes_t volume = m_crossfade_nframes + 1;              // Larger than any real volume.
   for (int i = s_max_sources - 1; i >= 0; --i)
   {
+    int direction = m_sources[i].m_direction;
     // Set the current input that is fade-in to fade-out.
-    if (m_sources[i].m_direction == 1 || m_sources[i].m_crossfade_frame > 0)
-      m_sources[i].m_direction = -1;                            // Because we do this first, m_direction == 0 now means that the input is unused.
+    if (direction == 1 || m_sources[i].m_crossfade_frame > 0)
+    {
+      m_active_inputs += 1 - std::abs(direction);
+      direction = m_sources[i].m_direction = -1;                // Because we do this first, direction == 0 now means that the input is unused.
+    }
     if (index >= -1)     // new_source wasn't found (yet)?
     {
       // Look for a place to insert new_source.
-      if (m_sources[i].m_direction == 0 || m_sources[i].m_crossfade_frame < volume)
+      if (direction == 0 || m_sources[i].m_crossfade_frame < volume)
       {
         index = i;                                              // Remember where we found it.
         volume = m_sources[i].m_crossfade_frame;                // Possibly overwrite an input that has the lowest volume.
-        ASSERT(m_sources[i].m_direction != 0 || volume == 0);   // If direction == 0 then volume must be zero to prevent us from overwriting index because we find a lower volume.
+        ASSERT(direction != 0 || volume == 0);                  // If direction == 0 then volume must be zero to prevent us from overwriting index because we find a lower volume.
       }
       // Check if new_source is already connected.
       if (m_sources[i].connected_output() == &new_source)
       {
         index = -2;                                             // Mark that we found new_source to be already connected.
-        m_sources[i].m_direction = m_sources[i].m_crossfade_frame < m_crossfade_nframes ? 1 : 0;        // Start fading it in, if not already at the maximum volume.
+        int const not_max_volume = m_sources[i].m_crossfade_frame < m_crossfade_nframes ? 1 : 0;
+        m_sources[i].m_direction = not_max_volume;              // Start fading it in, if not already at the maximum volume.
+        m_active_inputs += not_max_volume - std::abs(direction);
       }
     }
   }
@@ -104,6 +112,7 @@ void CrossfadeProcessor::add(JackOutput& new_source)
   {
     ASSERT(!current_source());                                  // All sources should be fading down now.
     m_sources[index].m_crossfade_frame = 0;
+    m_active_inputs += 1 - std::abs(m_sources[index].m_direction);
     m_sources[index].m_direction = 1;
     new_source.connect(m_sources[index]);                       // If m_sources[index] is already in use then this will disconnect it first.
   }
@@ -144,10 +153,8 @@ event_type CrossfadeProcessor::fill_output_buffer(int sequence_number)
 
   event_type events = 0;
 
-  // Count number of active inputs.
-  int active_inputs = count_active_inputs();
-  // We shouldn't get here when there aren't any active inputs remaining, should we?
-  ASSERT(active_inputs > 0);
+  // We shouldn't get here when there aren't any active inputs remaining.
+  ASSERT(m_active_inputs > 0);
 
   // Try to fill the input buffer of the active inputs.
   for (int i = 0; i < s_max_sources; ++i)
@@ -164,10 +171,11 @@ event_type CrossfadeProcessor::fill_output_buffer(int sequence_number)
       Dout(dc::notice, "CrossfadeProcessor::fill_output_buffer: caught BrokenPipe for input \"" << m_sources[i].m_name << "\".");
       // Disconnect the failed input and mark it as unused.
       m_sources[i].disconnect();
+      m_active_inputs -= std::abs(direction);
       m_sources[i].m_direction = 0;
       m_sources[i].m_crossfade_frame = 0;
       // An input failed; if this was the last input then stop.
-      if (--active_inputs == 0)
+      if (m_active_inputs == 0)
       {
         Dout(dc::notice, "No active inputs left: abort crossfading and rethrow.");
         stop_crossfading();
@@ -225,9 +233,6 @@ void CrossfadeProcessor::generate_output()
   if (!debug_on) LIBCWD_DEBUGCHANNELS::dc::notice.on();
 #endif // DEBUG_PROCESS
 
-  // Count number of active inputs.
-  int active_inputs = count_active_inputs();
-
   // Crossfade.
   jack_nframes_t const end[3] = { 0, 0, m_crossfade_nframes };
   jack_nframes_t frame = 0;
@@ -240,21 +245,22 @@ void CrossfadeProcessor::generate_output()
       if (direction == 0 && m_sources[i].m_crossfade_frame == 0)
         continue;
       sample += m_sources[i].chunk_ptr()[frame] * m_sources[i].m_crossfade_frame;
-      // Note that for a fully faded in current input, direction == 0 and m_crossfade_frame == m_crossfade_nframes
+      // Note that for a fully faded-in current input, direction == 0 and m_crossfade_frame == m_crossfade_nframes
       // so that the following boolean expression will be false because end[1] is 0 != m_crossfade_nframes.
       if ((m_sources[i].m_crossfade_frame += direction) == end[direction + 1])
       {
+        ASSERT(direction != 0);
         m_sources[i].m_direction = 0;
+        --m_active_inputs;
         if (direction == -1)
           m_sources[i].disconnect();
-        --active_inputs;
-        Dout(dc::notice, active_inputs << " active inputs left.");
+        Dout(dc::notice, m_active_inputs << " active inputs left.");
       }
     }
     out[frame++] = sample * m_crossfade_frame_normalization;
   }
 
-  if (active_inputs == 0)  // Did the crossfading finish?
+  if (m_active_inputs == 0)  // Did the crossfading finish?
   {
 #if DEBUG_PROCESS
     Dout(dc::notice, "Crossfading finished!");

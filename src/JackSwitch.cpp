@@ -27,7 +27,7 @@
 void JackSwitch::stop_crossfading(JackOutput* current_source)
 {
   ASSERT(is_crossfading());                                     // Don't call this when crossfading already stopped.
-  ASSERT(m_crossfade_processor.count_active_inputs() == 0 &&    // m_crossfade_processor should already be entirely reset.
+  ASSERT(m_crossfade_processor.active_inputs() == 0 &&          // m_crossfade_processor should already be entirely reset.
          !m_crossfade_processor.current_source());
   if (current_source)
     m_input.connect(*current_source);

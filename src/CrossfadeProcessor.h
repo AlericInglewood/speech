@@ -23,7 +23,6 @@
 
 #include "JackProcessor.h"
 #include "JackSilenceOutput.h"
-#include <cmath>
 
 class JackSwitch;
 class CrossfadeProcessor;
@@ -46,6 +45,8 @@ class CrossfadeProcessor : public JackProcessor
     static int const s_max_sources = 4;                 // Maximum number of simultaneous inputs.
     JackSwitch& m_switch;                               // Reference to the switch that owns this crossfader.
     CrossfadeInput m_sources[s_max_sources];            // Array with old inputs that we crossfade away from.
+    int m_active_inputs;                                // The number of inputs that are fading up or down (still changing volume).
+                                                        // Should be equal at all times with the sum of the absolute values of m_direction of all s_max_sources inputs in m_sources.
     jack_nframes_t m_sample_rate;                       // Copy of the sample rate.
     jack_nframes_t m_crossfade_nframes;                 // Number of frames used to crossfade between 0% and 100%.
     float m_crossfade_frame_normalization;              // Precalculated normalization factor.
@@ -58,14 +59,8 @@ class CrossfadeProcessor : public JackProcessor
 
     void sample_rate_changed(jack_nframes_t sample_rate);
 
-    // Returns the number of inputs that are fading in or out.
-    jack_nframes_t count_active_inputs() const
-    {
-      jack_nframes_t active_inputs = 0;
-      for (int i = 0; i < s_max_sources; ++i)
-        active_inputs += std::abs(m_sources[i].m_direction);
-      return active_inputs;
-    }
+    // Accessor.
+    int active_inputs() const { return m_active_inputs; }
 
     JackOutput* current_source()
     {
