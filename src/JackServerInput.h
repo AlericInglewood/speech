@@ -44,8 +44,8 @@ class JackServerInput : public JackInput
 
     /*virtual*/ jack_default_audio_sample_t* provided_input_buffer() const;
     /*virtual*/ jack_nframes_t nframes_provided_input_buffer() const;
-    /*virtual*/ void memcpy_input(jack_default_audio_sample_t const* chunk);
-    /*virtual*/ void zero_input();
+    /*virtual*/ event_type memcpy_input(jack_default_audio_sample_t const* chunk);
+    /*virtual*/ event_type zero_input();
 };
 
 #endif // JACK_SERVER_INPUT_H

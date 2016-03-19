@@ -31,12 +31,14 @@ jack_nframes_t JackServerInput::nframes_provided_input_buffer() const
   return m_chunk_size;
 }
 
-void JackServerInput::memcpy_input(jack_default_audio_sample_t const* chunk)
+event_type JackServerInput::memcpy_input(jack_default_audio_sample_t const* chunk)
 {
   std::memcpy(m_chunk, chunk, m_chunk_size * sizeof(jack_default_audio_sample_t));
+  return 0;
 }
 
-void JackServerInput::zero_input()
+event_type JackServerInput::zero_input()
 {
   std::memset(m_chunk, 0, m_chunk_size * sizeof(jack_default_audio_sample_t));
+  return 0;
 }

@@ -59,7 +59,7 @@ int JackClient::process_cb(jack_nframes_t nframes, void* self)
   return client->process(in, out, nframes);
 }
 
-JackClient::JackClient(char const* name) : m_sample_rate(0), m_input_buffer_size(0)
+JackClient::JackClient(char const* name) : m_input_buffer_size(0), m_sample_rate(0)
 {
   // Try to become a client of the JACK server.
   m_client = jack_client_open(name, JackNoStartServer, NULL);
@@ -103,9 +103,9 @@ JackClient::JackClient(char const* name) : m_sample_rate(0), m_input_buffer_size
 int JackClient::sample_rate_cb(jack_nframes_t nframes, void* self)
 {
   JackClient* client = static_cast<JackClient*>(self);
-  client->m_sample_rate = nframes;
   Dout(dc::notice, "Engine sample rate: " << nframes << " Hz.");
-  return client->sample_rate_changed();
+  client->m_sample_rate = nframes;
+  return client->sample_rate_changed(nframes);
 }
 
 //static

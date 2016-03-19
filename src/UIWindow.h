@@ -24,6 +24,12 @@
 #include <string>
 #include <functional>
 
+// Work around for compile warning in gtkmm 3.10.
+#ifndef _GTKMM_STACK_H
+#define _GTKMM_STACK_H
+#define _GTKMM_STACKSWITCHER_H
+#endif
+
 #include <gtkmm/window.h>
 #include <gtkmm/application.h>
 #include <gtkmm/builder.h>

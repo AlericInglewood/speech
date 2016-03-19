@@ -1,8 +1,8 @@
 /**
- * /file JackServerOutput.cpp
- * /brief Implementation of class JackServerOutput.
+ * \file Events.h
+ * \brief Declaration of BrokenPipe, event_type and constants.
  *
- * Copyright (C) 2015, 2016 Aleric Inglewood.
+ * Copyright (C) 2016 Aleric Inglewood.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published
@@ -18,15 +18,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "sys.h"
-#include "JackServerOutput.h"
+#ifndef EVENTS_H
+#define EVENTS_H
 
-event_type JackServerOutput::fill_output_buffer(int sequence_number)
+#include <exception>
+
+typedef int event_type;
+
+event_type const event_bit_try_again = 0x1;
+event_type const event_bit_stop_playback = 0x2;
+event_type const event_bit_stop_recording = 0x4;
+
+class BrokenPipe : public std::exception
 {
-  if (m_sequence_number == sequence_number)
-    return 0;
-  m_sequence_number = sequence_number;
-  // api_output_provided_buffer requires we set m_chunk and m_chunk_size in fill_output_buffer(),
-  // but those are already set by the call to initialize() when we get here.
-  return handle_memcpys();
-}
+  private:
+    event_type m_event_mask;
+
+  public:
+    BrokenPipe(event_type mask) : m_event_mask(mask) { }
+
+    event_type mask() const { return m_event_mask; }
+};
+
+#endif // EVENTS_H

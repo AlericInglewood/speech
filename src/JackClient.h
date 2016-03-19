@@ -29,11 +29,12 @@ class JackClient
 {
   protected:
     jack_client_t* m_client;
-    jack_nframes_t m_sample_rate;
     jack_nframes_t m_input_buffer_size;
 
     jack_port_t* m_input_port;
     jack_port_t* m_output_port;
+
+    jack_nframes_t m_sample_rate;
 
   public:
     JackClient(char const* name);
@@ -53,7 +54,7 @@ class JackClient
   protected:
     virtual void thread_init() { }
     virtual void shutdown() { }
-    virtual int sample_rate_changed() { return 0; }
+    virtual int sample_rate_changed(jack_nframes_t) { return 0; }
     virtual void buffer_size_changed() { }
     virtual void port_connect(jack_port_id_t a, jack_port_id_t b, int yn);
     virtual void latency(jack_latency_callback_mode_t mode);

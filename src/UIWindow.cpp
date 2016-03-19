@@ -160,6 +160,8 @@ UIWindow::~UIWindow()
 
 void UIWindow::on_button_record_clicked()
 {
+  Dout(dc::notice, "==================================");
+  DoutEntering(dc::notice, "UIWindow::on_button_record_clicked");
   if (!m_button_record->get_active())
   {
     if (!m_internal_set_active)
@@ -187,6 +189,8 @@ void UIWindow::on_button_record_clicked()
 
 void UIWindow::on_button_play_clicked()
 {
+  Dout(dc::notice, "==================================");
+  DoutEntering(dc::notice, "UIWindow::on_button_play_clicked");
   if (!m_button_play->get_active())
   {
     if (!m_internal_set_active)
@@ -238,6 +242,8 @@ void UIWindow::stop_playback_if_any()
 
 void UIWindow::on_button_stop_clicked()
 {
+  Dout(dc::notice, "==================================");
+  DoutEntering(dc::notice, "UIWindow::on_button_stop_clicked");
   stop_recording_if_any();
   stop_playback_if_any();
 }

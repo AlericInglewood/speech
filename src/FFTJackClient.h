@@ -52,11 +52,6 @@ class FFTJackClient : public JackClient, public RecordingDeviceState
     JackSwitch m_test_switch;
     JackSwitch m_output_switch;
 
-    // Helper variables used during crossfading.
-    jack_nframes_t m_crossfade_frame;
-    jack_nframes_t m_crossfade_nframes;
-    float m_crossfade_frame_normalization;
-
   public:
     FFTJackClient(char const* name, double period);
     virtual ~FFTJackClient() { }
@@ -68,8 +63,7 @@ class FFTJackClient : public JackClient, public RecordingDeviceState
     /*virtual*/ void calculate_delay(jack_latency_range_t& range);
     /*virtual*/ int process(jack_default_audio_sample_t* in, jack_default_audio_sample_t* out, jack_nframes_t nframes);
     /*virtual*/ void buffer_size_changed();
-    // Inherited from RecordingDeviceState.
-    /*virtual*/ void output_source_changed();
+    /*virtual*/ int sample_rate_changed(jack_nframes_t sample_rate);
 
   private:
     FFTJackClient(FFTJackClient const&);

@@ -28,13 +28,11 @@
 
 #include "debug.h"
 #include "FFTJackClient.h"
+#include "UIWindow.h"
 #include "Configuration.h"
 #include "utils/debug_ostream_operators.h"
 #include "utils/AIAlert.h"
 #include "utils/GlobalObjectManager.h"
-
-#include <gtkmm.h>
-#include "UIWindow.h"
 
 int main(int argc, char* argv[])
 {

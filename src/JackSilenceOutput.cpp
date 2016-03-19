@@ -44,19 +44,23 @@ void JackSilenceOutput::buffer_size_changed(jack_nframes_t nframes)
   m_chunk_size = nframes;
 }
 
-void JackSilenceOutput::fill_output_buffer(int sequence_number)
+event_type JackSilenceOutput::fill_output_buffer(int sequence_number)
 {
   if (m_sequence_number == sequence_number)
-    return;
+    return 0;
   m_sequence_number = sequence_number;
 
   // api_output_provided_buffer requires we set m_chunk and m_chunk_size in fill_output_buffer(),
   // but those already set by the call to buffer_size_changed() when we get here.
 
+  event_type events = 0;
+
   for (auto input : m_connected_inputs)
   {
     if (!has_zero_input(input.second))
       break;
-    input.first->zero_input();
+    events |= input.first->zero_input();
   }
+
+  return events;
 }

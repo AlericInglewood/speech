@@ -21,11 +21,36 @@
 #include "sys.h"
 
 #include "JackSwitch.h"
+#include "utils/macros.h"
 #include "debug.h"
 
-#if 0
-void JackSwitch::generate_output()
+void JackSwitch::stop_crossfading(JackOutput* current_source)
 {
-  DoutEntering(dc::notice, "JackSwitch::generate_output() NEEDS IMPLEMENTATION");
+  ASSERT(is_crossfading());                                     // Don't call this when crossfading already stopped.
+  ASSERT(m_crossfade_processor.count_active_inputs() == 0 &&    // m_crossfade_processor should already be entirely reset.
+         !m_crossfade_processor.current_source());
+  if (current_source)
+    m_input.connect(*current_source);
+  else
+    m_input.disconnect();
 }
-#endif
+
+void JackSwitch::connect(JackOutput& new_source)
+{
+  bool const crossfading = is_crossfading();
+  JackOutput* prev_source = crossfading ? m_crossfade_processor.current_source() : m_input.connected_output();
+  if (prev_source == &new_source)
+    return;
+  DoutEntering(dc::notice, "JackSwitch::connect(): [" << new_source.m_name << "] o<---o [" << m_input.m_name << " Switch]");
+  Dout(dc::notice, "prev_source = " << (prev_source ? prev_source->m_name : "NULL"));
+  if (crossfading)
+  {
+    // We're switching to a new output source while already crossfading!
+    m_crossfade_processor.add(new_source);
+  }
+  else
+  {
+    m_input << m_crossfade_processor;
+    m_crossfade_processor.begin(new_source, prev_source);
+  }
+}

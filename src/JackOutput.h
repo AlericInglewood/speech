@@ -22,6 +22,7 @@
 #define JACK_OUTPUT_H
 
 #include "ApiType.h"
+#include "Events.h"
 #include <jack/jack.h>
 #include <string>
 #include <vector>
@@ -80,7 +81,7 @@ class JackOutput
     virtual ~JackOutput() { disconnect(); release_allocated_buffer(); }
 
     // Copy generated output to inputs that provide their own buffer, if any.
-    void handle_memcpys();
+    event_type handle_memcpys();
 
   public:
     // Connect an input to this output; does nothing when already connected to this output.
@@ -100,7 +101,7 @@ class JackOutput
     // Does all the work, so all connected inputs are ready to be read from after this call.
     // This function should first check if it wasn't called before with sequence_number,
     // and if it wasn't, generate the output (to m_chunk) and finally call handle_memcpys().
-    virtual void fill_output_buffer(int sequence_number) = 0;
+    virtual event_type fill_output_buffer(int sequence_number) = 0;
 
     virtual api_type type() const
     {

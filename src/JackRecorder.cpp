@@ -21,30 +21,23 @@
 #include "sys.h"
 
 #include "JackRecorder.h"
+#include "Events.h"
 #include "utils/macros.h"
 
-void JackRecorder::memcpy_input(jack_default_audio_sample_t const* chunk)
+event_type JackRecorder::memcpy_input(jack_default_audio_sample_t const* chunk)
 {
-  if (!m_recording_buffer.push(chunk))
-  {
-    m_error |= recorder_full;
-    throw RoutingError();
-  }
+  return m_recording_buffer.push(chunk) ? 0 : event_bit_stop_recording;
 }
 
-void JackRecorder::zero_input()
+event_type JackRecorder::zero_input()
 {
-  if (!m_recording_buffer.push_zero())
-  {
-    m_error |= recorder_full;
-    throw RoutingError();
-  }
+  return m_recording_buffer.push_zero() ? 0 : event_bit_stop_recording;
 }
 
-void JackRecorder::fill_output_buffer(int sequence_number)
+event_type JackRecorder::fill_output_buffer(int sequence_number)
 {
   if (m_output_sequence_number == sequence_number)
-    return;
+    return 0;
   m_sequence_number = sequence_number;
   // api_output_provided_buffer requires we set m_chunk and m_chunk_size in fill_output_buffer.
   while (true)  // So we can use break and continue.
@@ -52,12 +45,12 @@ void JackRecorder::fill_output_buffer(int sequence_number)
     m_chunk = m_recording_buffer.read();
     if (AI_UNLIKELY(!m_chunk))
     {
+      Dout(dc::notice, "JackRecorder::fill_output_buffer(" << sequence_number << "): at end of recording buffer.");
       // We reached the end. Reset the read pointer to the beginning of the buffer.
       reset_readptr();
       if (!m_repeat || m_recording_buffer.empty())
       {
-        m_error |= recorder_empty;
-        throw RoutingError();
+        throw BrokenPipe(event_bit_stop_playback);
       }
       // We get here at most once because after reset_readptr() either read() will succeed or m_recording_buffer.empty() will return true.
       continue; // Try again.
@@ -65,5 +58,5 @@ void JackRecorder::fill_output_buffer(int sequence_number)
     m_chunk_size = m_recording_buffer.nframes();
     break;      // Done.
   }
-  handle_memcpys();
+  return handle_memcpys();
 }

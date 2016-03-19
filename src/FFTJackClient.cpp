@@ -27,25 +27,19 @@
 #include "FFTJackClient.h"
 #include "JackProcessor.h"
 #include "JackChunkAllocator.h"
+#include "Events.h"
 #include "utils/macros.h"
 
 FFTJackClient::FFTJackClient(char const* name, double period) : JackClient(name), RecordingDeviceState(passthrough),
   m_fft_buffer_size(0), m_playback_state(0), m_sequence_number(0),
   m_recorder(m_client, period),
-  m_recording_switch(m_recorder), m_test_switch(m_fft_processor), m_output_switch(m_jack_server_input),
-  m_crossfade_frame(-1)
+  m_recording_switch(m_recorder), m_test_switch(m_fft_processor), m_output_switch(m_jack_server_input)
 {
   // Set the size of the FFT buffer, in samples.
   set_fft_buffer_size(256);
-}
 
-void FFTJackClient::output_source_changed()
-{
-  // The output source changed, initialize crossfading.
-  constexpr float PI = 3.141592653589793f;      // Real precision is 3.1415927(410..)
-  m_crossfade_frame = 0;
-  m_crossfade_nframes = m_sample_rate / 50;     // Suppress output in 20 ms.
-  m_crossfade_frame_normalization = PI / m_crossfade_nframes;
+  // Initialize the switches.
+  sample_rate_changed(m_sample_rate);
 }
 
 int FFTJackClient::process(jack_default_audio_sample_t* left, jack_default_audio_sample_t* right, jack_nframes_t nframes)
@@ -125,25 +119,31 @@ int FFTJackClient::process(jack_default_audio_sample_t* left, jack_default_audio
     }
 #endif // DEBUG_PROCESS
 
+    // Attempt to fill the input buffers that we have.
+    event_type events = 0;
     try
     {
       // Fill recorder.
       if ((statebits & record_mask) || m_recording_switch.is_crossfading()) // (Still) recording?
       {
-        m_recorder.fill_input_buffer(m_sequence_number);
+        events |= m_recorder.fill_input_buffer(m_sequence_number);
       }
 
       // Fill JACK server.
-      m_jack_server_input.fill_input_buffer(m_sequence_number);
-
-      // Success.
-      break;
+      events |= m_jack_server_input.fill_input_buffer(m_sequence_number);
     }
-    catch (RoutingError const&)
+    catch (BrokenPipe const& error)
+    {
+      Dout(dc::notice, "FFTJackClient::process: caught BrokenPipe");
+      // With the current position of the switches we cannot create the necessary output!
+      events |= event_bit_try_again;    // If the pipe broke then the code below should change the routing,
+      events |= error.mask();           // using these events, after which we need to try again.
+    }
+
+    if (AI_UNLIKELY(events))
     {
       // Stop recording/playback if needed.
-      int const recorder_error = m_recorder.error();
-      if ((recorder_error & recorder_empty))
+      if ((events & event_bit_stop_playback))
       {
 #if DEBUG_PROCESS
         Debug(if (!dc::notice.is_on()) dc::notice.on());
@@ -152,7 +152,7 @@ int FFTJackClient::process(jack_default_audio_sample_t* left, jack_default_audio
         // Recording buffer is empty, mute the output.
         set_playback_state(statebits & (direct | passthrough));
       }
-      if ((recorder_error & recorder_full))
+      if ((events & event_bit_stop_recording))
       {
 #if DEBUG_PROCESS
         Debug(if (!dc::notice.is_on()) dc::notice.on());
@@ -162,45 +162,18 @@ int FFTJackClient::process(jack_default_audio_sample_t* left, jack_default_audio
         statebits &= ~record_mask;
         set_recording_state(0);
       }
-      if (recorder_error)
+      if ((events & (event_bit_stop_playback | event_bit_stop_recording)))
         m_wakeup_gui();
 
-      // Routing should be changed now.
-      ASSERT(get_state() != m_last_state);
-    }
-  }
-
-#if 0
-  {
-#if DEBUG_PROCESS
-    Dout(dc::notice, "Crossfading from " << prev_source << " to " << current_source << "!");
-#endif // DEBUG_PROCESS
-    // Crossfade from prev_source to current_source.
-    jack_nframes_t frame = 0;
-    while (frame < nframes && m_crossfade_frame < m_crossfade_nframes)
-    {
-      float factor = 0.5f * (std::cos(m_crossfade_frame_normalization * m_crossfade_frame) + 1.0f);
-      out[frame] = current_source[frame] + (prev_source[frame] - current_source[frame]) * factor;
-      ++frame;
-      ++m_crossfade_frame;
-    }
-    if (m_crossfade_frame == m_crossfade_nframes)       // Did the crossfading finish?
-    {
-#if DEBUG_PROCESS
-      Debug(if (!dc::notice.is_on()) dc::notice.on());
-      Dout(dc::notice, "(Crossfading from ... to ...! -->) Crossfading finished!");
-#endif // DEBUG_PROCESS
-      // Fill the remainder of the current output buffer if the crossfading finished before the end.
-      if (frame < nframes)
+      if ((events & event_bit_try_again))
       {
-        std::memcpy(&out[frame], &current_source[frame], sizeof(jack_default_audio_sample_t) * (nframes - frame));
+        // Routing should be changed now.
+        ASSERT(get_state() != m_last_state);
+        continue;                       // Retry filling the output buffer.
       }
-      // Set the previous state bits to zero; this will cause prev_source to become NULL the next call.
-      m_state.fetch_and(current_mask);
-      m_crossfade_frame = -1;
     }
+    break;
   }
-#endif // 0
 
 #if DEBUG_PROCESS
   Debug(if (dc::notice.is_on()) dc::notice.off());
@@ -232,4 +205,12 @@ void FFTJackClient::buffer_size_changed()
   m_recorder.buffer_size_changed(m_input_buffer_size);
   JackChunkAllocator::instance().buffer_size_changed(m_input_buffer_size);
   m_silence.buffer_size_changed(m_input_buffer_size);      // Must be called after JackChunkAllocator::buffer_size_changed.
+}
+
+int FFTJackClient::sample_rate_changed(jack_nframes_t sample_rate)
+{
+  m_recording_switch.sample_rate_changed(sample_rate);
+  m_test_switch.sample_rate_changed(sample_rate);
+  m_output_switch.sample_rate_changed(sample_rate);
+  return 0;
 }

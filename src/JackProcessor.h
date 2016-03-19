@@ -65,6 +65,12 @@ class JackProcessor : public JackInput, public JackOutput
     // Read input, process, write output.
     virtual void generate_output() = 0;
 
+    friend JackInput& operator<<(JackInput& input, JackProcessor& processor)
+    {
+      processor.JackOutput::connect(input);
+      return processor;
+    }
+
     /*virtual*/ api_type type() const
     {
       // Assume as default that no buffers are provided by the processor.
@@ -72,7 +78,7 @@ class JackProcessor : public JackInput, public JackOutput
     }
 
     // JackOutput
-    /*virtual*/ void fill_output_buffer(int sequence_number);
+    /*virtual*/ event_type fill_output_buffer(int sequence_number);
 };
 
 #endif // JACK_PROCESSOR_H

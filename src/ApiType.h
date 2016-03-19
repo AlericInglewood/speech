@@ -32,8 +32,8 @@ api_type const api_input_uses_output_buffer = 0;
 // virtual jack_default_audio_sample_t* provided_input_buffer() const
 api_type const api_input_provided_buffer = 1;
 
-// virtual void memcpy_input(jack_default_audio_sample_t const*)
-// virtual void zero_input()
+// virtual event_type memcpy_input(jack_default_audio_sample_t const*)
+// virtual event_type zero_input()
 api_type const api_input_memcpy_zero = 2;       // This must be the largest api_input_* bit value.
 
 // JackOutput API

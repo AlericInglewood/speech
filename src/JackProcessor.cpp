@@ -21,12 +21,13 @@
 #include "sys.h"
 #include "JackProcessor.h"
 
-void JackProcessor::fill_output_buffer(int sequence_number)
+event_type JackProcessor::fill_output_buffer(int sequence_number)
 {
   if (m_sequence_number == sequence_number)
-    return;
+    return 0;
   m_sequence_number = sequence_number;
-  fill_input_buffer(sequence_number);
+  event_type events = fill_input_buffer(sequence_number);
   generate_output();
-  handle_memcpys();
+  events |= handle_memcpys();
+  return events;
 }

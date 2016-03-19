@@ -57,7 +57,7 @@ void JackOutput::connect(JackInput& input)
   if (connected_output == this)
     return;
 
-  DoutEntering(dc::notice, "JackOutput::connect([" << input.m_name << "]) with this = " << (void*)this << " [" << m_name << "].");
+  DoutEntering(dc::notice, "JackOutput::\e[38;5;10mconnect\e[0m(): [" << m_name << "] ==> [" << input.m_name << "]");
 
   if (connected_output)
   {
@@ -98,7 +98,7 @@ void JackOutput::connect(JackInput& input)
 
 void JackOutput::disconnect(JackInput& input)
 {
-  DoutEntering(dc::notice, "JackOutput::disconnect([" << input.m_name << "]) with this = " << (void*)this << " [" << m_name << "].");
+  DoutEntering(dc::notice, "JackOutput::\e[38;5;1mdisconnect\e[0m(): [" << m_name << "] -/> [" << input.m_name << "].");
   ASSERT(input.m_connected_output == this);
 
   JackInput* const input_ptr = &input;
@@ -141,8 +141,9 @@ void JackOutput::disconnect()
   release_allocated_buffer();
 }
 
-void JackOutput::handle_memcpys()
+event_type JackOutput::handle_memcpys()
 {
+  event_type events = 0;
   jack_default_audio_sample_t* const from = chunk_ptr();
   for (auto input : m_connected_inputs)
   {
@@ -154,6 +155,7 @@ void JackOutput::handle_memcpys()
     if (has_provided_input_buffer(input.second) &&
         input.first->provided_input_buffer() == from)
       continue;
-    input.first->memcpy_input(from);
+    events |= input.first->memcpy_input(from);
   }
+  return events;
 }

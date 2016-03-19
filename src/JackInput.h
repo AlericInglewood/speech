@@ -53,10 +53,10 @@ class JackInput
 
   public:
     // Fill buffer.
-    void fill_input_buffer(int sequence_number)
+    event_type fill_input_buffer(int sequence_number)
     {
       // The output buffer of m_connected_output is our input buffer.
-      m_connected_output->fill_output_buffer(sequence_number);
+      return m_connected_output->fill_output_buffer(sequence_number);
     }
 
     // Connect this input to output.
@@ -70,6 +70,13 @@ class JackInput
     {
       if (m_connected_output)
         m_connected_output->disconnect(*this);
+    }
+
+    void swap(JackInput& input)
+    {
+      JackOutput* tmp = m_connected_output;
+      m_connected_output = input.m_connected_output;
+      input.m_connected_output = tmp;
     }
 
     // The underlaying buffer to use; used by JackProcessor derived classes to read data from.
@@ -98,14 +105,16 @@ class JackInput
       return 0;
     }
 
-    virtual void memcpy_input(jack_default_audio_sample_t const*)
+    virtual event_type memcpy_input(jack_default_audio_sample_t const*)
     {
       ASSERT(false);                            // This function should only be called when has_memcpy_input(type()) is true;
+      return 0;
     };
 
-    virtual void zero_input()
+    virtual event_type zero_input()
     {
       ASSERT(false);                            // This function should only be called when has_zero_input(type()) is true.
+      return 0;
     };
 };
 

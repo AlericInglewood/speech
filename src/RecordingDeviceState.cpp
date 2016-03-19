@@ -53,13 +53,10 @@ void RecordingDeviceState::set_playback_state(int playback_state)
 {
   playback_state &= playback_mask;
   constexpr int mask = playback_mask | (playback_mask << prev_mask_shift);
-  bool changed;
   int oldstate = m_state.load(std::memory_order_relaxed);
-  while ((changed = playback_state != (oldstate & playback_mask)) &&                                                            // If the playback state changed then
+  while (playback_state != (oldstate & playback_mask) &&                                                                        // If the playback state changed then
          !m_state.compare_exchange_weak(oldstate,                                                                               // atomically replace oldstate with
                                         (oldstate & ~mask) | ((oldstate & playback_mask) << prev_mask_shift) | playback_state,  // this, where the old playback state is moved the previous playback state
                                                                                                                                 // and the current playback state is replaced with playback_state.
                                         std::memory_order_relaxed, std::memory_order_relaxed));                                 // No synchronization with other memory is needed.
-  if (changed)
-    output_source_changed();
 }

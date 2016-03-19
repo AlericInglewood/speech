@@ -36,7 +36,7 @@ class JackSilenceOutput : public JackOutput
     /*virtual*/ api_type type() const { return api_output_provided_buffer; }
 
     // JackOutput
-    /*virtual*/ void fill_output_buffer(int sequence_number);
+    /*virtual*/ event_type fill_output_buffer(int sequence_number);
 };
 
 #endif // JACK_SILENCE_OUTPUT_H

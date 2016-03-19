@@ -79,9 +79,6 @@ class RecordingDeviceState
   protected:
     // Return true if we must play from the start when reaching the end of the playback buffer.
     static bool is_repeat(int statebits) { return statebits & playback_repeat; }
-
-  private:
-    virtual void output_source_changed() = 0;
 };
 
 #endif // RECORDING_DEVICE_STATE_H
