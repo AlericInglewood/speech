@@ -49,6 +49,7 @@ namespace debug {
       // Add new debug channels here.
 
       channel_ct xmlparser DDCN("XMLPARSER");   //!< This debug channel is used for parsing xml files.
+      channel_ct profiler  DDCN("PROFILER");    //!< This debug channel is used for profiling the jack client.
 
     } // namespace dc
   } // namespace DEBUGCHANNELS

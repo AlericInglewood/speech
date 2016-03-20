@@ -49,7 +49,7 @@ class CrossfadeProcessor : public JackProcessor
                                                         // Should be equal at all times with the sum of the absolute values of m_direction of all s_max_sources inputs in m_sources.
     jack_nframes_t m_sample_rate;                       // Copy of the sample rate.
     jack_nframes_t m_crossfade_nframes;                 // Number of frames used to crossfade between 0% and 100%.
-    float m_crossfade_frame_normalization;              // Precalculated normalization factor.
+    jack_default_audio_sample_t m_crossfade_frame_normalization;        // Precalculated normalization factor.
 
   private:
     void stop_crossfading();

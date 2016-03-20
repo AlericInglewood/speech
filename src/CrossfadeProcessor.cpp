@@ -23,10 +23,11 @@
 #include "JackSwitch.h"
 #include "JackRecorder.h"
 #include "Events.h"
+#include "utils/macros.h"
 #include <cmath>
 
 CrossfadeProcessor::CrossfadeProcessor(JackSwitch& owner) :
-    JackProcessor(owner.input().m_name + " \e[48;5;14mCrossfadeProcessor\e[0m"),
+    JackProcessor(DEBUG_ONLY(owner.input().m_name + " \e[48;5;14mCrossfadeProcessor\e[0m")),
     m_switch(owner), m_active_inputs(0), m_sample_rate(0)
 {
 }
@@ -197,6 +198,7 @@ void CrossfadeProcessor::generate_output()
   jack_nframes_t nframes = JackOutput::nframes();
 
 #if DEBUG_PROCESS
+#ifdef CWDEBUG
   JackOutput* new_source = NULL;
   Dout(dc::notice|continued_cf, "\e[48;5;5mCrossfading from\e[0m ");
   int count = 0;
@@ -231,23 +233,36 @@ void CrossfadeProcessor::generate_output()
   debug::Indent debug_indent(2);
   bool debug_on = LIBCWD_DEBUGCHANNELS::dc::notice.is_on();
   if (!debug_on) LIBCWD_DEBUGCHANNELS::dc::notice.on();
+#endif
 #endif // DEBUG_PROCESS
 
-  // Crossfade.
-  jack_nframes_t const end[3] = { 0, 0, m_crossfade_nframes };
+  // Crossfade. Written slightly hackish because here is where the CPU counts.
+  jack_nframes_t end[3] = { m_crossfade_nframes, 0, 0 };
+
+  // For each frame;
   jack_nframes_t frame = 0;
   while (frame < nframes)
   {
+    // Calculate the output sample from,
     jack_default_audio_sample_t sample = 0;
-    for (int i = 0; i < s_max_sources; ++i)
+    // all input sources...
+    CrossfadeInput* sourcep = m_sources;
+    for (int i = 0; i < s_max_sources; ++i, ++sourcep)
     {
-      int const direction = m_sources[i].m_direction;
-      if (direction == 0 && m_sources[i].m_crossfade_frame == 0)
+      // Cache m_sources[i].
+      jack_nframes_t crossfade_frame = sourcep->m_crossfade_frame;
+      int const direction = sourcep->m_direction;
+
+      // ...that are relevant.
+      if (crossfade_frame == 0 && direction == 0)
         continue;
-      sample += m_sources[i].chunk_ptr()[frame] * m_sources[i].m_crossfade_frame;
+
+      sample += sourcep->chunk_ptr()[frame] * crossfade_frame;
+      crossfade_frame += direction;
+
       // Note that for a fully faded-in current input, direction == 0 and m_crossfade_frame == m_crossfade_nframes
       // so that the following boolean expression will be false because end[1] is 0 != m_crossfade_nframes.
-      if ((m_sources[i].m_crossfade_frame += direction) == end[direction + 1])
+      if (AI_UNLIKELY(crossfade_frame == end[1 - direction]))
       {
         ASSERT(direction != 0);
         m_sources[i].m_direction = 0;
@@ -256,8 +271,13 @@ void CrossfadeProcessor::generate_output()
           m_sources[i].disconnect();
         Dout(dc::notice, m_active_inputs << " active inputs left.");
       }
+
+      // Store value back.
+      m_sources[i].m_crossfade_frame = crossfade_frame;
     }
-    out[frame++] = sample * m_crossfade_frame_normalization;
+    // Store the result.
+    out[frame] = sample * m_crossfade_frame_normalization;
+    ++frame;
   }
 
   if (m_active_inputs == 0)  // Did the crossfading finish?
@@ -268,6 +288,8 @@ void CrossfadeProcessor::generate_output()
     stop_crossfading();
   }
 #if DEBUG_PROCESS
+#ifdef CWDEBUG
   if (!debug_on) LIBCWD_DEBUGCHANNELS::dc::notice.off();
+#endif
 #endif
 }

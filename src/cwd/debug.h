@@ -110,6 +110,7 @@ using libcwd::channel_ct;
 // Add the declaration of new debug channels here
 // and add their definition in a custom debug.cpp file.
 extern channel_ct xmlparser;
+extern channel_ct profiler;
 
 } // namespace dc
 } // namespace DEBUGCHANNELS

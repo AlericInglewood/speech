@@ -20,6 +20,7 @@
 
 #include "sys.h"
 #include "JackServerInput.h"
+#include <cstring>
 
 jack_default_audio_sample_t* JackServerInput::provided_input_buffer() const
 {

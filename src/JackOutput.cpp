@@ -22,6 +22,7 @@
 #include "JackOutput.h"
 #include "JackInput.h"
 #include "JackChunkAllocator.h"
+#include <algorithm>
 
 void JackOutput::create_allocated_buffer()
 {

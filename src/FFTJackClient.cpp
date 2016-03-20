@@ -20,15 +20,18 @@
 
 #include "sys.h"
 
-#include <iostream>
-#include <cmath>
-
 #include "debug.h"
 #include "FFTJackClient.h"
 #include "JackProcessor.h"
 #include "JackChunkAllocator.h"
 #include "Events.h"
 #include "utils/macros.h"
+
+#include <iostream>
+#include <cmath>
+#ifdef PROFILING
+#include <chrono>
+#endif
 
 FFTJackClient::FFTJackClient(char const* name, double period) : JackClient(name), RecordingDeviceState(passthrough),
   m_fft_buffer_size(0), m_playback_state(0), m_sequence_number(0),
@@ -45,6 +48,9 @@ FFTJackClient::FFTJackClient(char const* name, double period) : JackClient(name)
 int FFTJackClient::process(jack_default_audio_sample_t* left, jack_default_audio_sample_t* right, jack_nframes_t nframes)
 {
   DoutEntering(dc::notice, "FFTJackClient::process(" << left << ", " << right << ", " << nframes << ")");
+#ifdef PROFILING
+  auto start = std::chrono::system_clock::now();
+#endif
 
   m_jack_server_input.initialize(right, nframes);      // right is the input from the jack server perspective.
   m_jack_server_output.initialize(left, nframes);
@@ -79,7 +85,7 @@ int FFTJackClient::process(jack_default_audio_sample_t* left, jack_default_audio
 
 #if DEBUG_PROCESS
       Debug(if (!dc::notice.is_on()) dc::notice.on());
-      assert(libcwd::channels::dc::notice.is_on());
+      ASSERT(libcwd::channels::dc::notice.is_on());
 #endif // DEBUG_PROCESS
       Dout(dc::notice, "-----------------------------------------------");
 #if 0
@@ -115,7 +121,7 @@ int FFTJackClient::process(jack_default_audio_sample_t* left, jack_default_audio
 #if DEBUG_PROCESS
     else
     {
-      assert(!libcwd::channels::dc::notice.is_on());
+      ASSERT(!libcwd::channels::dc::notice.is_on());
     }
 #endif // DEBUG_PROCESS
 
@@ -175,9 +181,18 @@ int FFTJackClient::process(jack_default_audio_sample_t* left, jack_default_audio
     break;
   }
 
+#ifdef PROFILING
+  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - start);
+#ifdef CWDEBUG
+  Dout(dc::profiler, "Total time in process(): " << duration.count() << " µs.");
+#else
+  std::cout << "Total time in process(): " << duration.count() << " µs." << std::endl;
+#endif
+#endif
+
 #if DEBUG_PROCESS
   Debug(if (dc::notice.is_on()) dc::notice.off());
-  assert(!libcwd::channels::dc::notice.is_on());
+  ASSERT(!libcwd::channels::dc::notice.is_on());
 #endif // DEBUG_PROCESS
   return 0;
 }
