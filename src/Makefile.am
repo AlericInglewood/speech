@@ -1,16 +1,6 @@
-## Process this file with automake to generate Makefile.in
-
-AUTOMAKE_OPTIONS = foreign
-
-SUBDIRS = cwd utils xml threadsafe .
-
-EXTRA_DIST = ${BUILT_SOURCES}
+AM_CPPFLAGS = -iquote $(top_srcdir)
 
 bin_PROGRAMS = speech
-BUILT_SOURCES =
-DEFS = @DEFS@
-DEFAULT_INCLUDES=-iquote $(top_builddir) -iquote $(top_builddir)/src -iquote $(srcdir) -iquote $(srcdir)/cwd
-CXXFLAGS =
 
 speech_SOURCES = \
         Persist.cpp \
@@ -34,14 +24,13 @@ speech_SOURCES = \
         UIWindow.cpp \
         speech.cpp
 
-speech_CXXFLAGS = @LIBXML_CFLAGS@ @CXXFLAGS@ @LIBCWD_FLAGS@ @LIBJACK_CFLAGS@ @LIBGTKMM_CFLAGS@ @LIBFFTWF_CFLAGS@
-speech_LDFLAGS = -Wl,--export-dynamic
-speech_LDADD = threadsafe/.libs/libthreadsafe.a xml/.libs/libxml.a utils/.libs/libutils.a cwd/.libs/libdebug.a @LIBXML_LIBS@ @LIBS@ @LIBCWD_LIBS@ @LIBJACK_LIBS@ @LIBGTKMM_LIBS@ @LIBFFTWF_LIBS@
-speech_DEPENDENCIES = threadsafe/.libs/libthreadsafe.la xml/libxml.la utils/libutils.la cwd/libdebug.la
+speech_CXXFLAGS = @LIBCWD_FLAGS@ @LIBXML_CFLAGS@ @LIBJACK_CFLAGS@ @LIBGTKMM_CFLAGS@ @LIBFFTWF_CFLAGS@
+speech_LDADD = threadsafe/.libs/libthreadsafe.la xml/libxml_r.la utils/libutils_r.la $(top_builddir)/cwds/libcwds_r.la \
+               @LIBCWD_LIBS@ @LIBXML_LIBS@ @LIBJACK_LIBS@ @LIBGTKMM_LIBS@ @LIBFFTWF_LIBS@
 
 # --------------- Maintainer's Section
 
-sys.h: timestamp-sys.h
+SUBDIRS = utils xml threadsafe
 
 #dist-hook:
 
@@ -56,7 +45,7 @@ all-local:
 	fi
 
 distclean-local:
-	rm -rf $(srcdir)/autom4te.cache sys.h
+	rm -rf $(srcdir)/autom4te.cache
 	@MAINTAINER_MODE_TRUE@rm -f .all_sources *.s *.ii
 
 clean-local:

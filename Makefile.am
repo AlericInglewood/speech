@@ -1,25 +1,19 @@
-## Process this file with automake to generate Makefile.in
+include $(srcdir)/cwm4/root_makefile_top.am
 
-AUTOMAKE_OPTIONS = foreign
-ACLOCAL_AMFLAGS = @ACLOCAL_CWFLAGS@
+SUBDIRS = @CW_SUBDIRS@ src
 
-SUBDIRS = src .
-
-EXTRA_DIST = LICENSE INSTALL README NEWS
+EXTRA_DIST += LICENSE INSTALL README NEWS
 DISTCLEANFILES = stamp-h.in
 
-DEFS = @DEFS@
 CXXFLAGS = @CXXFLAGS@ @LIBCWD_FLAGS@
 LIBS = @LIBCWD_LIBS@
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = 
 
-# --------------- Maintainer's Section
+include $(srcdir)/cwm4/root_makefile_bottom.am
+
+sys.h: timestamp-sys.h
 
 distclean-local:
-	rm -rf $(srcdir)/autom4te.cache *~
-
-MAINTAINERCLEANFILES = $(srcdir)/aclocal.m4 $(srcdir)/config.h.in $(srcdir)/configure $(srcdir)/Makefile.in \
-	$(srcdir)/install-sh $(srcdir)/missing $(srcdir)/mkinstalldirs $(srcdir)/config.guess $(srcdir)/config.sub \
-	$(srcdir)/ltmain.sh $(srcdir)/stamp-h.in $(srcdir)/ChangeLog $(srcdir)/depcomp troep*
+	rm -f sys.h

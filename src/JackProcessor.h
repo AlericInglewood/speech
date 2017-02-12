@@ -61,6 +61,7 @@ class JackProcessor : public JackInput, public JackOutput
 
   public:
     JackProcessor(DEBUG_ONLY(std::string name)) : JackInput(DEBUG_ONLY(name)), JackOutput(DEBUG_ONLY(name)) COMMA_DEBUG_ONLY(m_name(name)) { }
+    ~JackProcessor() noexcept { }
 
     // Read input, process, write output.
     virtual void generate_output() = 0;

@@ -37,6 +37,7 @@ class JackRecorder : public JackInput, public JackOutput
     JackRecorder(jack_client_t* client, double period) :
         DEBUG_ONLY(JackInput("JackRecorder"), JackOutput("JackRecorder"),)
         m_recording_buffer(client, period), m_input_sequence_number(-1), m_repeat(false) { }
+    ~JackRecorder() noexcept { }
 
     void buffer_size_changed(jack_nframes_t nframes)
     {

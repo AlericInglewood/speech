@@ -1,9 +1,20 @@
+[submodule "cwm4"]
+	path = cwm4
+	url = https://github.com/CarloWood/cwm4.git
+	branch = master
+[submodule "cwds"]
+	path = cwds
+	url = https://github.com/CarloWood/cwds.git
+	branch = master
 [submodule "src/utils"]
 	path = src/utils
-	url = https://github.com/AlericInglewood/ai-utils.git
+	url = https://github.com/CarloWood/ai-utils.git
+	branch = master
 [submodule "src/xml"]
 	path = src/xml
-	url = https://github.com/AlericInglewood/ai-xml.git 
+	url = https://github.com/CarloWood/ai-xml.git
+	branch = master
 [submodule "src/threadsafe"]
 	path = src/threadsafe
-	url = https://github.com/AlericInglewood/ai-threadsafe.git 
+	url = https://github.com/CarloWood/ai-threadsafe.git
+	branch = master

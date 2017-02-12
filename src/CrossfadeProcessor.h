@@ -56,6 +56,7 @@ class CrossfadeProcessor : public JackProcessor
 
   public:
     CrossfadeProcessor(JackSwitch& owner);
+    ~CrossfadeProcessor() noexcept { }
 
     void sample_rate_changed(jack_nframes_t sample_rate);
 
